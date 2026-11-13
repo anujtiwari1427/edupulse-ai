@@ -1,0 +1,463 @@
+import { db, type EduPulseDB } from './db';
+import {
+  BookSchema,
+  ChapterSchema,
+  ChunkSchema,
+  PaperSchema,
+  QuestionSchema,
+  type BookRecord,
+  type ChapterRecord,
+  type ChunkRecord,
+  type PaperRecord,
+  type QuestionRecord,
+} from '@/src/lib/zod-schemas';
+import { normalizeQuestionText, sha256Hex } from '@/src/lib/utils';
+
+export async function loadSampleClass10Library(database: EduPulseDB = db): Promise<{
+  bookId: string;
+  questionsAdded: number;
+}> {
+  const now = Date.now();
+  const bookId = 'sample_ncert_class10_science';
+
+  const book: BookRecord = BookSchema.parse({
+    id: bookId,
+    title: 'NCERT Class 10 Science — Sample Excerpt',
+    board: 'CBSE',
+    classLevel: 10,
+    subject: 'Science',
+    language: 'en',
+    sourceType: 'textbook',
+    pageCount: 24,
+    chunkCount: 6,
+    status: 'ready',
+    copyrightConfirmed: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const chapters: ChapterRecord[] = [
+    {
+      id: 'sample_ch_1',
+      bookId,
+      order: 1,
+      title: 'Chapter 1: Chemical Reactions and Equations',
+      startPage: 1,
+      endPage: 8,
+      topics: ['Balanced equations', 'Types of chemical reactions', 'Oxidation and reduction'],
+    },
+    {
+      id: 'sample_ch_2',
+      bookId,
+      order: 2,
+      title: 'Chapter 2: Acids, Bases and Salts',
+      startPage: 9,
+      endPage: 16,
+      topics: ['pH scale', 'Neutralisation', 'Common salts'],
+    },
+    {
+      id: 'sample_ch_6',
+      bookId,
+      order: 3,
+      title: 'Chapter 5: Life Processes',
+      startPage: 17,
+      endPage: 24,
+      topics: ['Nutrition', 'Respiration', 'Transportation in plants and humans'],
+    },
+  ].map((c) => ChapterSchema.parse(c));
+
+  const chunks: ChunkRecord[] = [
+    {
+      id: 'sample_chk_1',
+      bookId,
+      chapterId: 'sample_ch_1',
+      pageNumber: 2,
+      chunkIndex: 0,
+      text: 'A balanced chemical equation has an equal number of atoms of different elements in the reactants and products, satisfying the law of conservation of mass.',
+      tokenEstimate: 30,
+      language: 'en',
+    },
+    {
+      id: 'sample_chk_2',
+      bookId,
+      chapterId: 'sample_ch_1',
+      pageNumber: 5,
+      chunkIndex: 1,
+      text: 'When a single reactant breaks down to give simpler products, it is a decomposition reaction. Thermal decomposition of ferrous sulphate crystals produces ferric oxide, sulphur dioxide, and sulphur trioxide.',
+      tokenEstimate: 34,
+      language: 'en',
+    },
+    {
+      id: 'sample_chk_3',
+      bookId,
+      chapterId: 'sample_ch_2',
+      pageNumber: 11,
+      chunkIndex: 0,
+      text: 'The pH scale measures hydrogen ion concentration in a solution. Solutions with pH less than 7 are acidic, pH equal to 7 are neutral, and pH greater than 7 are basic.',
+      tokenEstimate: 34,
+      language: 'en',
+    },
+    {
+      id: 'sample_chk_4',
+      bookId,
+      chapterId: 'sample_ch_2',
+      pageNumber: 14,
+      chunkIndex: 1,
+      text: 'Bleaching powder (CaOCl2) is produced by the action of chlorine on dry slaked lime Ca(OH)2. Baking soda (NaHCO3) is used in antacids and fire extinguishers.',
+      tokenEstimate: 32,
+      language: 'en',
+    },
+    {
+      id: 'sample_chk_5',
+      bookId,
+      chapterId: 'sample_ch_6',
+      pageNumber: 19,
+      chunkIndex: 0,
+      text: 'Autotrophic nutrition takes place through photosynthesis where green plants convert carbon dioxide and water into carbohydrates in the presence of chlorophyll and sunlight.',
+      tokenEstimate: 28,
+      language: 'en',
+    },
+    {
+      id: 'sample_chk_6',
+      bookId,
+      chapterId: 'sample_ch_6',
+      pageNumber: 22,
+      chunkIndex: 1,
+      text: 'The human heart has four chambers to prevent oxygen-rich blood from mixing with blood containing carbon dioxide. Double circulation ensures efficient oxygen supply in mammals and birds.',
+      tokenEstimate: 33,
+      language: 'en',
+    },
+  ].map((c) => ChunkSchema.parse(c));
+
+  const rawQuestions: Array<Omit<QuestionRecord, 'hash' | 'createdAt' | 'updatedAt'>> = [
+    {
+      id: 'sample_q_1',
+      bookId,
+      chapterId: 'sample_ch_1',
+      type: 'mcq',
+      text: 'Which gas is evolved when dilute hydrochloric acid reacts with zinc granules?',
+      options: ['Oxygen', 'Hydrogen', 'Carbon dioxide', 'Chlorine'],
+      answer: 'Hydrogen',
+      markingScheme: '1 mark for identifying Hydrogen gas (Zn + 2HCl -> ZnCl2 + H2).',
+      marks: 1,
+      difficulty: 'easy',
+      bloom: 'remember',
+      topic: 'Types of chemical reactions',
+      sourcePage: 2,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_2',
+      bookId,
+      chapterId: 'sample_ch_1',
+      type: 'assertion_reason',
+      text: 'Assertion (A): Respiration is considered an exothermic process.\nReason (R): Energy is released during the breakdown of glucose in cells.',
+      options: [
+        'Both A and R are true and R is the correct explanation of A',
+        'Both A and R are true but R is not the correct explanation of A',
+        'A is true but R is false',
+        'A is false but R is true',
+      ],
+      answer: 'Both A and R are true and R is the correct explanation of A',
+      markingScheme: '1 mark for selecting option (a).',
+      marks: 1,
+      difficulty: 'medium',
+      bloom: 'analyze',
+      topic: 'Oxidation and reduction',
+      sourcePage: 6,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_3',
+      bookId,
+      chapterId: 'sample_ch_2',
+      type: 'mcq',
+      text: 'A solution turns red litmus blue. Its pH is likely to be:',
+      options: ['1', '4', '5', '10'],
+      answer: '10',
+      markingScheme: '1 mark for identifying basic pH > 7 (10).',
+      marks: 1,
+      difficulty: 'easy',
+      bloom: 'understand',
+      topic: 'pH scale',
+      sourcePage: 11,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_4',
+      bookId,
+      chapterId: 'sample_ch_6',
+      type: 'mcq',
+      text: 'In which part of the alimentary canal does complete digestion of carbohydrates, proteins, and fats occur?',
+      options: ['Stomach', 'Small intestine', 'Large intestine', 'Oesophagus'],
+      answer: 'Small intestine',
+      markingScheme: '1 mark for Small intestine.',
+      marks: 1,
+      difficulty: 'easy',
+      bloom: 'remember',
+      topic: 'Nutrition',
+      sourcePage: 19,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_5',
+      bookId,
+      chapterId: 'sample_ch_1',
+      type: 'very_short',
+      text: 'Write the balanced chemical equation for the thermal decomposition of ferrous sulphate crystals.',
+      answer: '2FeSO4(s) --heat--> Fe2O3(s) + SO2(g) + SO3(g)',
+      markingScheme: '1 mark for correct reactants & products; 1 mark for balancing.',
+      marks: 2,
+      difficulty: 'medium',
+      bloom: 'apply',
+      topic: 'Types of chemical reactions',
+      sourcePage: 5,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_6',
+      bookId,
+      chapterId: 'sample_ch_2',
+      type: 'very_short',
+      text: 'Why does dry HCl gas not change the colour of dry litmus paper?',
+      answer:
+        'Dry HCl gas does not dissociate to produce hydrogen (H+) ions in the absence of moisture, so it does not show acidic behaviour.',
+      markingScheme: '1 mark for absence of H+ ions; 1 mark for role of water/moisture.',
+      marks: 2,
+      difficulty: 'medium',
+      bloom: 'understand',
+      topic: 'pH scale',
+      sourcePage: 10,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_7',
+      bookId,
+      chapterId: 'sample_ch_6',
+      type: 'short',
+      text: 'State three differences between aerobic and anaerobic respiration.',
+      answer:
+        '1. Aerobic occurs in presence of O2; anaerobic in absence of O2. 2. Aerobic produces CO2 and water; anaerobic produces ethanol/lactic acid. 3. Aerobic releases much higher ATP energy than anaerobic.',
+      markingScheme: '1 mark per valid point of distinction (3 points = 3 marks).',
+      marks: 3,
+      difficulty: 'easy',
+      bloom: 'understand',
+      topic: 'Respiration',
+      sourcePage: 20,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_8',
+      bookId,
+      chapterId: 'sample_ch_2',
+      type: 'short',
+      text: 'How is bleaching powder prepared? Write its chemical equation and list two uses.',
+      answer:
+        'Prepared by passing chlorine gas over dry slaked lime: Ca(OH)2 + Cl2 -> CaOCl2 + H2O. Uses: (1) Disinfecting drinking water, (2) Bleaching cotton and linen in textile industry.',
+      markingScheme: '1 mark for equation, 1 mark for preparation statement, 1 mark for two uses.',
+      marks: 3,
+      difficulty: 'medium',
+      bloom: 'apply',
+      topic: 'Common salts',
+      sourcePage: 14,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_9',
+      bookId,
+      chapterId: 'sample_ch_6',
+      type: 'long',
+      text: 'Explain double circulation in human beings with a neat flow sequence. Why is it necessary to separate oxygenated and deoxygenated blood in mammals?',
+      answer:
+        'Double circulation involves pulmonary circulation (right ventricle -> lungs -> left atrium) and systemic circulation (left ventricle -> body -> right atrium). Separation ensures high oxygen supply to meet high energy needs for thermoregulation.',
+      markingScheme:
+        '2 marks for pulmonary & systemic pathways; 2 marks for physiological necessity; 1 mark for neat schematic sequence.',
+      marks: 5,
+      difficulty: 'hard',
+      bloom: 'analyze',
+      topic: 'Transportation in plants and humans',
+      sourcePage: 22,
+      origin: 'bank',
+      language: 'en',
+    },
+    {
+      id: 'sample_q_10',
+      bookId,
+      chapterId: 'sample_ch_1',
+      type: 'long',
+      text: 'Define oxidation and reduction in terms of oxygen/hydrogen transfer. Identify the substance oxidised, reduced, oxidising agent, and reducing agent in: CuO + H2 -> Cu + H2O.',
+      answer:
+        'Oxidation is gain of oxygen or loss of hydrogen; reduction is loss of oxygen or gain of hydrogen. In the reaction: H2 is oxidised, CuO is reduced, CuO is the oxidising agent, and H2 is the reducing agent.',
+      markingScheme: '2 marks for definitions; 3 marks for identifying all four roles accurately.',
+      marks: 5,
+      difficulty: 'medium',
+      bloom: 'evaluate',
+      topic: 'Oxidation and reduction',
+      sourcePage: 7,
+      origin: 'bank',
+      language: 'en',
+    },
+  ];
+
+  const questions: QuestionRecord[] = await Promise.all(
+    rawQuestions.map(async (q) => {
+      const hash = await sha256Hex(normalizeQuestionText(q.text));
+      return QuestionSchema.parse({
+        ...q,
+        hash,
+        createdAt: now,
+        updatedAt: now,
+      });
+    })
+  );
+
+  const samplePaper: PaperRecord = PaperSchema.parse({
+    id: 'sample_paper_cbse10_unit1',
+    title: 'Class 10 Science — Unit Test I (Sample)',
+    language: 'en',
+    status: 'draft',
+    createdAt: now,
+    updatedAt: now,
+    blueprintSnapshot: {
+      id: 'sample_bp_unit1',
+      title: 'Class 10 Science Unit Test (20 Marks)',
+      language: 'en',
+      totalMarks: 20,
+      createdAt: now,
+      updatedAt: now,
+      header: {
+        schoolName: 'Sample Model High School',
+        board: 'CBSE',
+        classLevel: 10,
+        subject: 'Science',
+        examTitle: 'Unit Test — I',
+        durationMinutes: 45,
+        generalInstructions: [
+          'All questions are compulsory.',
+          'Marks for each question are indicated against it.',
+        ],
+      },
+      sections: [
+        {
+          id: 'sec_sample_a',
+          name: 'Section A — Objective (1 Mark each)',
+          questionType: 'mcq',
+          count: 4,
+          marksPerQuestion: 1,
+          choiceRule: { enabled: false, internalChoiceCount: 0 },
+          sourceMode: 'bank_only',
+          difficultySplit: { easy: 75, medium: 25, hard: 0 },
+          bloomTargets: ['remember', 'understand', 'analyze'],
+          chapterIds: ['sample_ch_1', 'sample_ch_2', 'sample_ch_6'],
+        },
+        {
+          id: 'sec_sample_b',
+          name: 'Section B — Very Short Answer (2 Marks each)',
+          questionType: 'very_short',
+          count: 2,
+          marksPerQuestion: 2,
+          choiceRule: { enabled: false, internalChoiceCount: 0 },
+          sourceMode: 'bank_only',
+          difficultySplit: { easy: 0, medium: 100, hard: 0 },
+          bloomTargets: ['understand', 'apply'],
+          chapterIds: ['sample_ch_1', 'sample_ch_2'],
+        },
+        {
+          id: 'sec_sample_c',
+          name: 'Section C — Short Answer (3 Marks each)',
+          questionType: 'short',
+          count: 2,
+          marksPerQuestion: 3,
+          choiceRule: { enabled: false, internalChoiceCount: 0 },
+          sourceMode: 'bank_only',
+          difficultySplit: { easy: 50, medium: 50, hard: 0 },
+          bloomTargets: ['understand', 'apply'],
+          chapterIds: ['sample_ch_2', 'sample_ch_6'],
+        },
+        {
+          id: 'sec_sample_d',
+          name: 'Section D — Long Answer (5 Marks)',
+          questionType: 'long',
+          count: 1,
+          marksPerQuestion: 5,
+          choiceRule: { enabled: false, internalChoiceCount: 0 },
+          sourceMode: 'bank_only',
+          difficultySplit: { easy: 0, medium: 0, hard: 100 },
+          bloomTargets: ['analyze'],
+          chapterIds: ['sample_ch_6'],
+        },
+      ],
+    },
+    sections: [
+      {
+        id: 'sec_sample_a',
+        name: 'Section A — Objective (1 Mark each)',
+        marksPerQuestion: 1,
+        choiceRule: { enabled: false, internalChoiceCount: 0 },
+        questions: questions.slice(0, 4).map((q, idx) => ({
+          ...q,
+          paperQuestionId: `pq_${q.id}`,
+          order: idx,
+        })),
+      },
+      {
+        id: 'sec_sample_b',
+        name: 'Section B — Very Short Answer (2 Marks each)',
+        marksPerQuestion: 2,
+        choiceRule: { enabled: false, internalChoiceCount: 0 },
+        questions: questions.slice(4, 6).map((q, idx) => ({
+          ...q,
+          paperQuestionId: `pq_${q.id}`,
+          order: idx,
+        })),
+      },
+      {
+        id: 'sec_sample_c',
+        name: 'Section C — Short Answer (3 Marks each)',
+        marksPerQuestion: 3,
+        choiceRule: { enabled: false, internalChoiceCount: 0 },
+        questions: questions.slice(6, 8).map((q, idx) => ({
+          ...q,
+          paperQuestionId: `pq_${q.id}`,
+          order: idx,
+        })),
+      },
+      {
+        id: 'sec_sample_d',
+        name: 'Section D — Long Answer (5 Marks)',
+        marksPerQuestion: 5,
+        choiceRule: { enabled: false, internalChoiceCount: 0 },
+        questions: [
+          {
+            ...questions[8]!,
+            paperQuestionId: `pq_${questions[8]!.id}`,
+            order: 0,
+          },
+        ],
+      },
+    ],
+    sets: [],
+  });
+
+  await database.transaction(
+    'rw',
+    [database.books, database.chapters, database.chunks, database.questions, database.papers],
+    async () => {
+      await database.books.put(book);
+      await database.chapters.bulkPut(chapters);
+      await database.chunks.bulkPut(chunks);
+      await database.questions.bulkPut(questions);
+      await database.papers.put(samplePaper);
+    }
+  );
+
+  return { bookId, questionsAdded: questions.length };
+}

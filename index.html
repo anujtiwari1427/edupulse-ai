@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduPulse AI — Local-First Question Paper Studio for Teachers</title>
+    <meta
+      name="description"
+      content="Create board-aligned CBSE, ICSE, and Maharashtra State Board question papers, answer keys, and marking schemes directly on your device."
+    />
+    <meta name="theme-color" content="#4338ca" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EduPulse" />
+
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EduPulse AI" />
+    <meta property="og:title" content="EduPulse AI — Local-First Question Paper Studio for Teachers" />
+    <meta
+      property="og:description"
+      content="Create board-aligned CBSE, ICSE, and Maharashtra State Board question papers, answer keys, and marking schemes directly on your device."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EduPulse AI — Local-First Question Paper Studio for Teachers" />
+    <meta
+      name="twitter:description"
+      content="Turn textbooks and question banks into print-ready question papers and answer keys—stored locally on your device."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "EduPulse AI",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "All",
+        "description": "Local-first question paper generator and question bank workspace for Indian school teachers covering CBSE, ICSE, and Maharashtra State Board.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR"
+        }
+      }
+    </script>
+
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('edupulse-theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (saved === 'dark' || (saved !== 'light' && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[var(--bg-page)] text-[var(--text-primary)] antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

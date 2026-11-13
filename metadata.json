@@ -1,0 +1,6 @@
+{
+  "name": "EduPulse AI",
+  "description": "Local-first question paper generator and question bank workspace for Indian school teachers (CBSE, ICSE, Maharashtra State Board).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
