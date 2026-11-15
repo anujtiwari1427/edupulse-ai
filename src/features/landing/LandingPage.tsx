@@ -128,9 +128,11 @@ export function LandingPage() {
             to="/"
             className="flex items-center gap-2.5 font-extrabold text-base tracking-tight text-[var(--text-primary)] whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30">
-              <BookOpen className="h-4 w-4" />
-            </div>
+            <img
+              src="/icon.svg"
+              alt="EduPulse AI Logo"
+              className="h-8 w-8 rounded-xl shadow-xs shrink-0"
+            />
             <span>EduPulse AI</span>
           </Link>
 
@@ -1007,8 +1009,9 @@ export function LandingPage() {
       {/* Quiet Footer */}
       <footer className="border-t border-[var(--border-hairline)] bg-[var(--bg-surface)]">
         <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-6 text-xs text-[var(--text-muted)]">
-          <div className="font-medium text-[var(--text-secondary)]">
-            EduPulse AI · Local-first question paper studio
+          <div className="flex items-center gap-2 font-medium text-[var(--text-secondary)]">
+            <img src="/icon.svg" alt="EduPulse AI Logo" className="h-5 w-5 rounded-md shrink-0 shadow-xs" />
+            <span>EduPulse AI · Local-first question paper studio</span>
           </div>
           <div className="flex items-center gap-5">
             <a href="#how-it-works" className="hover:text-[var(--text-primary)]">

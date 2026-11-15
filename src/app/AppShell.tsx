@@ -165,9 +165,11 @@ export function AppShell() {
               to="/"
               className="flex items-center gap-2.5 text-sm font-bold tracking-tight text-[var(--text-primary)] hover:opacity-90 transition-opacity"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30">
-                <Sparkles className="h-4 w-4" />
-              </div>
+              <img
+                src="/icon.svg"
+                alt="EduPulse AI Logo"
+                className="h-8 w-8 rounded-xl shadow-xs shrink-0"
+              />
               <div className="flex flex-col">
                 <span className="leading-tight font-extrabold tracking-tight">EduPulse AI</span>
                 <span className="text-[10px] font-medium text-[var(--text-muted)] tracking-wider uppercase">Studio v2.0</span>
@@ -176,10 +178,14 @@ export function AppShell() {
           ) : (
             <Link
               to="/"
-              className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30"
+              className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl hover:opacity-90 transition-opacity"
               title="EduPulse AI"
             >
-              <Sparkles className="h-4 w-4" />
+              <img
+                src="/icon.svg"
+                alt="EduPulse AI Logo"
+                className="h-8 w-8 rounded-xl shadow-xs"
+              />
             </Link>
           )}
 
@@ -263,7 +269,14 @@ export function AppShell() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex h-14 items-center justify-between border-b border-[var(--border-hairline)] px-4">
-              <span className="text-sm font-bold text-[var(--text-primary)]">EduPulse AI</span>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/icon.svg"
+                  alt="EduPulse AI Logo"
+                  className="h-7 w-7 rounded-lg shadow-xs shrink-0"
+                />
+                <span className="text-sm font-bold text-[var(--text-primary)]">EduPulse AI</span>
+              </div>
               <button
                 type="button"
                 aria-label="Close navigation menu"
