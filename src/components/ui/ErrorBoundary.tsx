@@ -52,6 +52,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   handleRetry = () => {
+    sessionStorage.removeItem('chunk_reload');
     if (this.isChunkLoadError()) {
       window.location.reload();
       return;

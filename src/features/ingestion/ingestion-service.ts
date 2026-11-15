@@ -110,6 +110,32 @@ export async function skipOcrAndFinishJob(jobId: string): Promise<void> {
   void executeCheckpointPipeline(jobId, checkpoint);
 }
 
+export function isJobRunningInMemory(jobId: string): boolean {
+  return activeControllers.has(jobId);
+}
+
+/**
+ * Recovers background jobs when the user reloads the tab or opens the application.
+ * Any job marked 'running' in IndexedDB whose in-memory worker process is no longer active
+ * is safely transitioned to 'paused' so the UI offers instant 1-click resume/skip.
+ */
+export async function pauseOrphanedRunningJobs(): Promise<void> {
+  try {
+    const jobs = await repository.jobsRepo.listJobs();
+    for (const job of jobs) {
+      if (job.status === 'running' && !activeControllers.has(job.id)) {
+        await repository.jobsRepo.updateJobProgress(job.id, {
+          status: 'paused',
+          title: job.title.includes('(paused)') ? job.title : `${job.title} (paused)`,
+          errorMessage: 'Task paused. Click "Skip OCR & Finish" to complete indexing immediately.',
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to pause orphaned running jobs:', err);
+  }
+}
+
 export async function startIngestionJob(input: StartIngestionInput): Promise<{
   bookId: string;
   jobId: string;

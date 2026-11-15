@@ -124,15 +124,25 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
     >
       <div className="space-y-4">
         {hasBogusChapters && (
-          <div className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
-            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-            <div className="text-xs space-y-1">
-              <span className="font-semibold block">DTP Printer Artifacts Detected</span>
-              <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                Book contains printing plate labels (e.g. PRILIM, TEXT, COVER). Click{' '}
-                <strong>⚡ Auto-Detect (Fast TOC)</strong> or <strong>✨ AI Chapter Scan</strong> below to replace them with real curriculum chapters.
-              </p>
+          <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <span className="font-semibold block">DTP Printer Artifacts Detected</span>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                  Book contains printing plate labels (e.g. PRILIM, TEXT, COVER). Click <strong>Auto-Fix Chapters</strong> to replace them with real curriculum chapters from the Table of Contents.
+                </p>
+              </div>
             </div>
+            <Button
+              size="sm"
+              loading={tocScanning}
+              onClick={() => void handleAutoDetectFromTOC()}
+              leftIcon={<Zap className="h-3.5 w-3.5" />}
+              className="bg-amber-600 hover:bg-amber-700 text-white shrink-0 font-medium text-xs h-8"
+            >
+              Auto-Fix Chapters
+            </Button>
           </div>
         )}
 

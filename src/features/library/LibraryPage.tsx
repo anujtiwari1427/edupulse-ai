@@ -20,6 +20,8 @@ import { repository } from '@/src/features/storage/repository';
 import { loadSampleClass10Library } from '@/src/features/storage/sample-data';
 import {
   cancelIngestionJob,
+  isJobRunningInMemory,
+  pauseOrphanedRunningJobs,
   resumeIngestionJob,
   skipOcrAndFinishJob,
   startIngestionJob,
@@ -88,6 +90,11 @@ export function LibraryPage() {
   const [deleteBookTarget, setDeleteBookTarget] = React.useState<BookRecord | null>(null);
   const [loadingSample, setLoadingSample] = React.useState(false);
   const [aiTagging, setAiTagging] = React.useState(false);
+
+  // Auto-pause orphaned running jobs from previous sessions to offer 1-click finish
+  React.useEffect(() => {
+    void pauseOrphanedRunningJobs();
+  }, []);
 
   // Filters & bulk selection
   const [filterBookId, setFilterBookId] = React.useState<string>('all');

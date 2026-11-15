@@ -1,13 +1,14 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowRight, BookOpen, CheckCircle2, FileText, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, CheckCircle2, FileText, Loader2, Sparkles, Zap } from 'lucide-react';
 import { Alert, Badge, Button, Modal, Select } from '@/src/components/ui';
 import { ChapterSelectDropdown } from './ChapterSelectDropdown';
 import { db } from '@/src/features/storage/db';
 import { repository } from '@/src/features/storage/repository';
 import { generateQuestionPaperJob, type GenerationProgressUpdate } from '@/src/features/generation/generation-service';
 import { createBlankBlueprint } from '@/src/features/blueprint/blueprint-engine';
+import { BOGUS_OUTLINE_REGEX, applyAutoDetectedChaptersToBook } from '@/src/features/ingestion/chapter-detector';
 import { generateId } from '@/src/lib/utils';
 import { getErrorMessage } from '@/src/lib/errors';
 import { useUIStore } from '@/src/app/store';
@@ -53,6 +54,34 @@ export function QuickGeneratePaperModal({
   );
 
   const activeBook = React.useMemo(() => books.find((b) => b.id === selectedBookId) || null, [books, selectedBookId]);
+
+  const [autoFixing, setAutoFixing] = React.useState(false);
+
+  const hasBogusChapters = React.useMemo(() => {
+    return chapters.some((c) => BOGUS_OUTLINE_REGEX.test(c.title.trim()));
+  }, [chapters]);
+
+  const handleAutoFixChapters = async () => {
+    if (!selectedBookId) return;
+    setAutoFixing(true);
+    try {
+      const fixed = await applyAutoDetectedChaptersToBook(selectedBookId);
+      addToast({
+        title: 'Chapters auto-fixed',
+        description: `Extracted ${fixed.length} syllabus chapters from Table of Contents.`,
+        variant: 'success',
+      });
+      setSelectedChapterIds([]);
+    } catch (err) {
+      addToast({
+        title: 'Auto-fix failed',
+        description: getErrorMessage(err),
+        variant: 'danger',
+      });
+    } finally {
+      setAutoFixing(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!activeBook) {
@@ -210,7 +239,7 @@ export function QuickGeneratePaperModal({
         </div>
 
         {/* Chapters Dropdown Menu */}
-        <div>
+        <div className="space-y-2">
           <ChapterSelectDropdown
             chapters={chapters}
             selectedChapterIds={selectedChapterIds}
@@ -218,6 +247,23 @@ export function QuickGeneratePaperModal({
             label="Syllabus Chapters (Dropdown Menu)"
             placeholder="Choose chapters to include in this exam…"
           />
+          {hasBogusChapters && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200">
+              <span className="text-[11px]">
+                Detected printing plate tags (PRILIM/TEXT). Auto-fix with real chapters from TOC?
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                loading={autoFixing}
+                onClick={() => void handleAutoFixChapters()}
+                leftIcon={<Zap className="h-3 w-3 text-amber-500" />}
+                className="text-xs h-7 px-2.5 shrink-0 bg-white dark:bg-zinc-900 font-medium"
+              >
+                ⚡ Auto-Fix Chapters
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Exam Format / Pattern */}
