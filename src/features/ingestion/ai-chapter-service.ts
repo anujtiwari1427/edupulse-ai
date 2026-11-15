@@ -315,32 +315,63 @@ export async function applyAIChaptersToBook(bookId: string): Promise<ChapterReco
     throw new AppError(`Textbook with ID "${bookId}" was not found.`, { code: 'NOT_FOUND' });
   }
 
-  // Synthesize extracted pages from existing chunks
-  const chunks = await repository.libraryRepo.listAllChunks(bookId);
-  const pageMap = new Map<number, string>();
-  for (const chunk of chunks) {
-    const existing = pageMap.get(chunk.pageNumber) || '';
-    pageMap.set(chunk.pageNumber, `${existing}\n${chunk.text}`.trim());
+  let pages: ExtractedPage[] = [];
+  let outline: OutlineItem[] = [];
+
+  // 1. Try to re-extract fresh structured text directly from stored PDF
+  if (typeof Worker !== 'undefined' && book.fileId) {
+    try {
+      const storedFile = await repository.libraryRepo.getFile(book.fileId);
+      if (storedFile?.data) {
+        const { createWorkerClient } = await import('./ingestion-service');
+        const workerHandle = createWorkerClient();
+        const batch = await workerHandle.api.parsePdfPageBatch(
+          storedFile.data.slice(0),
+          1,
+          book.pageCount || 1000,
+          true
+        );
+        workerHandle.terminate();
+        if (batch && batch.pages.length > 0) {
+          pages = batch.pages;
+          outline = batch.outline || [];
+        }
+      }
+    } catch (workerErr) {
+      console.warn('Worker re-parse fallback to stored chunks:', workerErr);
+    }
   }
 
-  const pages: ExtractedPage[] = [];
-  const maxPage = Math.max(book.pageCount, ...Array.from(pageMap.keys()), 1);
+  // 2. Fallback: synthesize extracted pages from existing chunks
+  if (pages.length === 0) {
+    const chunks = await repository.libraryRepo.listAllChunks(bookId);
+    const pageMap = new Map<number, string>();
+    for (const chunk of chunks) {
+      const existing = pageMap.get(chunk.pageNumber) || '';
+      pageMap.set(chunk.pageNumber, `${existing}\n${chunk.text}`.trim());
+    }
 
-  for (let p = 1; p <= maxPage; p++) {
-    pages.push({
-      pageNumber: p,
-      text: pageMap.get(p) || '',
-    });
+    const maxPage = Math.max(book.pageCount, ...Array.from(pageMap.keys()), 1);
+    for (let p = 1; p <= maxPage; p++) {
+      pages.push({
+        pageNumber: p,
+        text: pageMap.get(p) || '',
+      });
+    }
   }
 
-  const detected = await detectChaptersWithAI(pages, {
-    bookId: book.id,
-    title: book.title,
-    board: book.board,
-    classLevel: book.classLevel,
-    subject: book.subject,
-    language: book.language,
-  });
+  const detected = await detectChaptersWithAI(
+    pages,
+    {
+      bookId: book.id,
+      title: book.title,
+      board: book.board,
+      classLevel: book.classLevel,
+      subject: book.subject,
+      language: book.language,
+    },
+    outline
+  );
 
   const newChapters: ChapterRecord[] = detected.map((ch) =>
     ChapterSchema.parse({
@@ -354,7 +385,8 @@ export async function applyAIChaptersToBook(bookId: string): Promise<ChapterReco
     })
   );
 
-  const reassignedChunks = reassignChunksToChapters(chunks, newChapters);
+  const existingChunks = await repository.libraryRepo.listAllChunks(book.id);
+  const reassignedChunks = reassignChunksToChapters(existingChunks, newChapters);
   await repository.libraryRepo.saveBookChaptersAndReassignChunks(
     book.id,
     newChapters,

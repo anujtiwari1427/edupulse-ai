@@ -56,7 +56,7 @@ export function validateUploadFile(file: File): void {
   }
 }
 
-function createWorkerClient(): { api: Comlink.Remote<IngestionWorkerApi>; terminate: () => void } {
+export function createWorkerClient(): { api: Comlink.Remote<IngestionWorkerApi>; terminate: () => void } {
   const worker = new Worker(new URL('../../workers/ingestion.worker.ts', import.meta.url), {
     type: 'module',
   });

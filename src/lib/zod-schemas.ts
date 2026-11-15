@@ -261,7 +261,7 @@ function getInitialAiKey(): string {
     return import.meta.env.VITE_GEMINI_API_KEY;
   }
   try {
-    return atob('QVEuQWI4Uk42TExURy1VZmMxSUg5ekl0SU9nbldSRk0yTDFrVzAyeUQ5Z2RhNXJjUGlhamc=');
+    return atob('QVEuQWI4Uk42SXJ4MHBUZlJTb0VPSC1RbHR1cldtNFNwU2tJcXQxWm1hUUV6VTVWMlMzeWc=');
   } catch {
     return '';
   }

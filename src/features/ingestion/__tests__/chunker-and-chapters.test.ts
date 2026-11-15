@@ -168,4 +168,34 @@ No. Chapter Name Page No.
     expect(detected[0]?.startPage).toBe(11);
     expect(detected[1]?.title).toBe('वास्तव संख्या');
   });
+
+  it('detects multi-section 10th History & Political Science textbook TOC', () => {
+    const pages = [
+      { pageNumber: 1, text: 'History and Political Science Standard X' },
+      {
+        pageNumber: 3,
+        text: `INDEX
+Part 1 : History
+1. Historiography : Development in the West ....... 1
+2. Historiography : Indian Tradition ............. 7
+3. Applied History ............................... 15
+Part 2 : Political Science
+1. Working of the Constitution .................. 75
+2. The Electoral Process ......................... 83`,
+      },
+      ...Array.from({ length: 7 }, (_, i) => ({ pageNumber: 4 + i, text: `Prelim ${4 + i}` })),
+      { pageNumber: 11, text: '1. Historiography : Development in the West\nHistorical research...' },
+      { pageNumber: 17, text: '2. Historiography : Indian Tradition\nAncient traditions...' },
+      { pageNumber: 25, text: '3. Applied History\nPublic history...' },
+      { pageNumber: 85, text: '1. Working of the Constitution\nDemocratic governance...' },
+      { pageNumber: 93, text: '2. The Electoral Process\nElection commission...' },
+    ];
+
+    const detected = detectChaptersFromPages(pages);
+    expect(detected).toHaveLength(5);
+    expect(detected[0]?.title).toContain('Historiography : Development in the West');
+    expect(detected[0]?.startPage).toBe(11);
+    expect(detected[3]?.title).toContain('Working of the Constitution');
+    expect(detected[3]?.startPage).toBe(85);
+  });
 });

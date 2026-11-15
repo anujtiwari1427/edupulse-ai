@@ -57,7 +57,7 @@ export function resolveDefaultAiKey(): string {
     return import.meta.env.VITE_GEMINI_API_KEY;
   }
   try {
-    return atob('QVEuQWI4Uk42TExURy1VZmMxSUg5ekl0SU9nbldSRk0yTDFrVzAyeUQ5Z2RhNXJjUGlhamc=');
+    return atob('QVEuQWI4Uk42SXJ4MHBUZlJTb0VPSC1RbHR1cldtNFNwU2tJcXQxWm1hUUV6VTVWMlMzeWc=');
   } catch {
     return '';
   }
@@ -65,6 +65,11 @@ export function resolveDefaultAiKey(): string {
 
 export const DEFAULT_AI_KEY = resolveDefaultAiKey();
 export const DEFAULT_AI_MODEL = 'gemini-3.5-flash';
+
+// Old quota-exhausted keys to auto-migrate away from in stored IndexedDB settings
+const RETIRED_AI_KEYS = new Set([
+  atob('QVEuQWI4Uk42TExURy1VZmMxSUg5ekl0SU9nbldSRk0yTDFrVzAyeUQ5Z2RhNXJjUGlhamc='),
+]);
 
 export const DEFAULT_SETTINGS: SettingsRecord = {
   id: 'default',
@@ -98,11 +103,13 @@ export function createRepository(database: EduPulseDB = db) {
         const parsed = SettingsSchema.safeParse(existing);
         if (parsed.success) {
           const currentKey = parsed.data.aiApiKey?.trim();
+          const isRetired = currentKey ? RETIRED_AI_KEYS.has(currentKey) : false;
+          const activeKey = !currentKey || isRetired ? DEFAULT_AI_KEY : currentKey;
           const hasCustomModel = parsed.data.aiModel && parsed.data.aiModel !== 'gemini-4-hydrogen';
           return {
             ...parsed.data,
             aiModel: hasCustomModel ? parsed.data.aiModel : DEFAULT_AI_MODEL,
-            aiApiKey: currentKey || DEFAULT_AI_KEY,
+            aiApiKey: activeKey,
           };
         }
       }

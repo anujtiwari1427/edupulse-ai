@@ -52,6 +52,57 @@ async function resolveOutline(
   }
 }
 
+function extractStructuredPageText(content: { items: any[] }): string {
+  let text = '';
+  let lastY: number | null = null;
+  let lastHeight: number | null = null;
+
+  for (const item of content.items) {
+    if (!('str' in item)) continue;
+    const str: string = item.str;
+    if (!str && !item.hasEOL) continue;
+
+    const currentY = Array.isArray(item.transform) ? item.transform[5] : undefined;
+    const fontHeight =
+      typeof item.height === 'number' && item.height > 0 ? item.height : (lastHeight ?? 10);
+
+    const yDelta = lastY !== null && currentY !== undefined ? Math.abs(currentY - lastY) : 0;
+    const isDoubleNewLine =
+      lastY !== null && currentY !== undefined && yDelta > Math.max(fontHeight * 1.5, 12);
+    const isNewLine =
+      Boolean(item.hasEOL) ||
+      (lastY !== null && currentY !== undefined && yDelta > Math.min(fontHeight * 0.35, 4));
+
+    if (isDoubleNewLine) {
+      if (text.length > 0 && !text.endsWith('\n\n')) {
+        text += text.endsWith('\n') ? '\n' : '\n\n';
+      }
+    } else if (isNewLine) {
+      if (text.length > 0 && !text.endsWith('\n')) {
+        text += '\n';
+      }
+    } else if (
+      text.length > 0 &&
+      !text.endsWith('\n') &&
+      !text.endsWith(' ') &&
+      !str.startsWith(' ')
+    ) {
+      text += ' ';
+    }
+
+    text += str;
+    if (currentY !== undefined) lastY = currentY;
+    lastHeight = fontHeight;
+  }
+
+  return text
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const workerApi = {
   async parsePdfPageBatch(
     buffer: ArrayBuffer,
@@ -74,16 +125,11 @@ const workerApi = {
       for (let p = clampedStart; p <= clampedEnd; p++) {
         const page = await pdf.getPage(p);
         const content = await page.getTextContent();
-        const textItems = content.items
-          .map((item) => ('str' in item ? item.str : ''))
-          .join(' ')
-          .replace(/[ \t]+/g, ' ')
-          .trim();
-
-        const compactLen = textItems.replace(/\s+/g, '').length;
+        const structuredText = extractStructuredPageText(content);
+        const compactLen = structuredText.replace(/\s+/g, '').length;
         pages.push({
           pageNumber: p,
-          text: textItems,
+          text: structuredText,
           needsOcr: compactLen < 35,
         });
       }
