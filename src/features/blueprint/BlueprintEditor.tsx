@@ -465,9 +465,9 @@ export function BlueprintEditor({
                         }
                         ariaLabel="Question Source"
                         options={[
-                          { value: 'mix', label: 'Mix (Bank + AI)' },
+                          { value: 'mix', label: 'Mix (Bank + Gemini AI)' },
                           { value: 'bank_only', label: 'Bank Only (Offline)' },
-                          { value: 'ai_from_book', label: 'AI From Textbook' },
+                          { value: 'ai_from_book', label: 'Gemini AI From Textbook' },
                         ]}
                       />
                     </div>

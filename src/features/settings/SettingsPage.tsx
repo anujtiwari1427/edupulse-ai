@@ -739,8 +739,8 @@ export function SettingsPage() {
                   }}
                   ariaLabel="AI Provider Mode"
                   options={[
+                    { value: 'gemini', label: 'Google Gemini (Default AI - Recommended)' },
                     { value: 'none', label: 'Offline / Bank-Only (No AI calls)' },
-                    { value: 'gemini', label: 'Google Gemini (BYOK)' },
                     { value: 'openai', label: 'OpenAI (BYOK)' },
                     { value: 'anthropic', label: 'Anthropic Claude (BYOK)' },
                     { value: 'proxy', label: 'Stateless Server Proxy (/api/ai)' },
@@ -758,7 +758,7 @@ export function SettingsPage() {
                         key={`${settings.aiProvider}-${settings.aiModel}`}
                         defaultValue={settings.aiModel}
                         onChange={(e) => debouncedSaveSettings({ aiModel: e.target.value })}
-                        placeholder="gemini-4-hydrogen"
+                        placeholder="gemini-3.5-flash"
                       />
                       {DEFAULT_MODELS_BY_PROVIDER[settings.aiProvider].length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1.5">

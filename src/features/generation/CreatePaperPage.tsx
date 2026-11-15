@@ -256,13 +256,31 @@ export function CreatePaperPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-          Create Question Paper
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Choose syllabus chapters, configure your board blueprint, and generate a customizable paper.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+            Create Question Paper
+          </h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Choose syllabus chapters, configure your board blueprint, and generate a customizable paper.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {aiEnabled ? (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium shadow-xs">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>AI Engine: <strong>Google Gemini ({settings?.aiModel || 'gemini-3.5-flash'})</strong></span>
+            </div>
+          ) : (
+            <Link to="/app/settings?tab=ai" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors">
+              <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+              <span>AI Engine: <strong>Offline Bank Only</strong> (Click to enable Gemini)</span>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Stepper */}
