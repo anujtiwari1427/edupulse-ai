@@ -10,29 +10,48 @@ export type StatusTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' 
 const toneClasses: Record<StatusTone, string> = {
   neutral: 'text-[var(--text-secondary)] bg-[var(--bg-subtle)] border-[var(--border-hairline)]',
   brand:
-    'text-[var(--brand-700)] dark:text-[var(--brand-500)] bg-[var(--brand-50)] border-[var(--brand-100)]',
-  success: 'text-[var(--success-text)] bg-[var(--success-bg)] border-[var(--success-border)]',
-  warning: 'text-[var(--warning-text)] bg-[var(--warning-bg)] border-[var(--warning-border)]',
-  danger: 'text-[var(--danger-text)] bg-[var(--danger-bg)] border-[var(--danger-border)]',
-  info: 'text-[var(--info-text)] bg-[var(--info-bg)] border-[var(--info-border)]',
+    'text-indigo-700 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/60 shadow-xs',
+  success:
+    'text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 shadow-xs',
+  warning:
+    'text-amber-700 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 shadow-xs',
+  danger:
+    'text-rose-700 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 shadow-xs',
+  info:
+    'text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 shadow-xs',
 };
 
 export interface BadgeProps {
   tone?: StatusTone;
   icon?: React.ReactNode;
+  dot?: boolean;
   children: React.ReactNode;
   className?: string;
 }
 
-export function Badge({ tone = 'neutral', icon, children, className }: BadgeProps) {
+export function Badge({ tone = 'neutral', icon, dot = false, children, className }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-tight whitespace-nowrap shrink-0 transition-colors',
         toneClasses[tone],
         className
       )}
     >
+      {dot && (
+        <span
+          className={cn(
+            'h-1.5 w-1.5 rounded-full shrink-0',
+            tone === 'brand' && 'bg-indigo-500 animate-pulse',
+            tone === 'success' && 'bg-emerald-500',
+            tone === 'warning' && 'bg-amber-500',
+            tone === 'danger' && 'bg-rose-500',
+            tone === 'info' && 'bg-blue-500',
+            tone === 'neutral' && 'bg-slate-400'
+          )}
+          aria-hidden="true"
+        />
+      )}
       {icon}
       {children}
     </span>
@@ -95,10 +114,10 @@ export function Progress({ value, label, className }: ProgressProps) {
       )}
       <ProgressPrimitive.Root
         value={clamped}
-        className="relative h-2 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]"
+        className="relative h-2.5 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]"
       >
         <ProgressPrimitive.Indicator
-          className="h-full bg-[#4338ca] transition-transform duration-200"
+          className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${100 - clamped}%)` }}
         />
       </ProgressPrimitive.Root>
@@ -127,14 +146,14 @@ export function EmptyState({ icon, title, description, action, className }: Empt
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-12 text-center',
+        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-strong)] bg-gradient-to-b from-[var(--bg-surface)] to-[var(--bg-subtle)] px-6 py-14 text-center shadow-xs',
         className
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50 shadow-xs">
         {icon}
       </div>
-      <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+      <h3 className="mt-4 text-base font-semibold text-[var(--text-primary)] tracking-tight">{title}</h3>
       <p className="mt-1.5 max-w-md text-xs text-[var(--text-secondary)] leading-relaxed">
         {description}
       </p>

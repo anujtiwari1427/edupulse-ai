@@ -4,11 +4,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowRight,
   BookOpen,
+  CheckCircle2,
   Download,
   FilePlus2,
   FileText,
   FolderSync,
+  GraduationCap,
   HardDrive,
+  HelpCircle,
+  LayoutTemplate,
+  Layers,
+  ShieldCheck,
   Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -113,20 +119,51 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Row with single primary CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-            {t('dashboard.title')}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('dashboard.subtitle')}</p>
-        </div>
+      {/* Welcome Cockpit Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-indigo-200/60 dark:border-indigo-900/40 bg-gradient-to-r from-indigo-900/10 via-indigo-600/5 to-purple-600/10 p-6 sm:p-7 shadow-xs">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-indigo-500/10 blur-2xl"
+        />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
+              <span className="flex items-center gap-1.5 rounded-full bg-indigo-100/80 dark:bg-indigo-950/70 px-2.5 py-0.5 border border-indigo-200 dark:border-indigo-800">
+                <GraduationCap className="h-3.5 w-3.5" />
+                {settings?.schoolName || 'School Examination Studio'}
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-100/80 dark:bg-emerald-950/70 px-2.5 py-0.5 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                100% Local-First
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+              {t('dashboard.title')}
+            </h1>
+            <p className="max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+              Design balanced question papers for CBSE, ICSE & Maharashtra State Board with deterministic marks arithmetic, multi-set generation, and instant print-ready exports.
+            </p>
+          </div>
 
-        <Link to="/app/create">
-          <Button leftIcon={<FilePlus2 className="h-4 w-4" />}>
-            {t('actions.createPaper')}
-          </Button>
-        </Link>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <Link to="/app/create">
+              <Button size="lg" leftIcon={<FilePlus2 className="h-4 w-4" />}>
+                {t('actions.createPaper')}
+              </Button>
+            </Link>
+            {books.length === 0 && (
+              <Button
+                size="lg"
+                variant="outline"
+                loading={loadingSample}
+                onClick={() => void handleLoadSample()}
+                leftIcon={<Sparkles className="h-4 w-4" />}
+              >
+                Load Sample Pack
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Contextual Alerts */}
@@ -168,41 +205,87 @@ export function DashboardPage() {
         </Alert>
       )}
 
-      {/* Real Workspace Counts */}
+      {/* Modern KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Textbooks & Banks', value: books.length, to: '/app/library' },
-          { label: 'Indexed Questions', value: questionCount, to: '/app/library' },
-          { label: 'Saved Papers', value: papers.length, to: '/app/papers' },
-          { label: 'Board Templates', value: templateCount, to: '/app/templates' },
-        ].map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 hover:border-[var(--border-strong)] transition-colors"
-          >
-            <div className="text-xs font-medium text-[var(--text-secondary)]">{item.label}</div>
-            <div className="mt-1.5 text-2xl font-bold font-mono tabular-nums text-[var(--text-primary)]">
-              {item.value}
-            </div>
-          </Link>
-        ))}
+          {
+            label: 'Textbooks & Banks',
+            value: books.length,
+            to: '/app/library',
+            icon: BookOpen,
+            badge: 'NCERT / State',
+            color: 'from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400',
+          },
+          {
+            label: 'Question Bank',
+            value: questionCount,
+            to: '/app/library',
+            icon: Sparkles,
+            badge: 'Tagged & Indexed',
+            color: 'from-purple-500/10 to-indigo-500/10 text-purple-600 dark:text-purple-400',
+          },
+          {
+            label: 'Saved Papers',
+            value: papers.length,
+            to: '/app/papers',
+            icon: FileText,
+            badge: 'Sets A/B/C',
+            color: 'from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400',
+          },
+          {
+            label: 'Board Blueprints',
+            value: templateCount,
+            to: '/app/templates',
+            icon: LayoutTemplate,
+            badge: 'CBSE / ICSE / SSC',
+            color: 'from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400',
+          },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="group relative overflow-hidden rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[var(--text-secondary)]">{item.label}</span>
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} transition-transform group-hover:scale-110`}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline justify-between">
+                <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-[var(--text-primary)]">
+                  {item.value}
+                </div>
+                <span className="text-[10px] font-medium text-[var(--text-muted)] tracking-tight">
+                  {item.badge}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Recent Question Papers */}
         <div className="lg:col-span-8">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>{t('dashboard.continueDrafts')}</CardTitle>
+                <CardTitle className="text-base font-bold">{t('dashboard.continueDrafts')}</CardTitle>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Recent question papers authored or generated in this browser
+                </p>
               </div>
               {papers.length > 0 && (
                 <Link
                   to="/app/papers"
-                  className="text-xs font-medium text-[var(--brand-700)] dark:text-[var(--brand-500)] hover:underline inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
                 >
-                  <span>View all</span>
+                  <span>View all ({papers.length})</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
@@ -210,22 +293,22 @@ export function DashboardPage() {
             <CardContent>
               {papers.length === 0 ? (
                 <EmptyState
-                  icon={<FileText className="h-5 w-5" />}
+                  icon={<FileText className="h-6 w-6" />}
                   title={t('dashboard.noDraftsTitle')}
-                  description={t('dashboard.noDraftsDesc')}
+                  description="You haven't created any question papers yet. Load our sample Class 10 Science library or create your first paper from scratch."
                   action={
-                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                       <Button
-                        size="sm"
-                        variant="outline"
+                        size="md"
+                        variant="primary"
                         loading={loadingSample}
                         onClick={() => void handleLoadSample()}
-                        leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+                        leftIcon={<Sparkles className="h-4 w-4" />}
                       >
                         {t('actions.loadSample')}
                       </Button>
                       <Link to="/app/library">
-                        <Button size="sm" variant="secondary">
+                        <Button size="md" variant="secondary" leftIcon={<BookOpen className="h-4 w-4" />}>
                           {t('actions.uploadTextbook')}
                         </Button>
                       </Link>
@@ -237,17 +320,16 @@ export function DashboardPage() {
                   {papers.slice(0, 5).map((paper) => (
                     <div
                       key={paper.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--bg-subtle)]/40 px-2 -mx-2 rounded-xl transition-colors"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 space-y-1">
                         <Link
                           to={`/app/editor/${paper.id}`}
-                          className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--brand-700)] dark:hover:text-[var(--brand-500)] truncate block"
+                          className="text-sm font-bold text-[var(--text-primary)] hover:text-indigo-600 dark:hover:text-indigo-400 truncate block transition-colors"
                         >
                           {paper.title}
                         </Link>
                         <MetaLine
-                          className="mt-1"
                           items={[
                             paper.blueprintSnapshot.header.board,
                             `Class ${paper.blueprintSnapshot.header.classLevel}`,
@@ -258,12 +340,15 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <Badge tone={paper.status === 'finalized' ? 'success' : 'neutral'}>
+                        <Badge
+                          tone={paper.status === 'finalized' ? 'success' : 'neutral'}
+                          dot={paper.status === 'finalized'}
+                        >
                           {paper.status === 'finalized' ? 'Finalized' : 'Draft'}
                         </Badge>
                         <Link to={`/app/editor/${paper.id}`}>
-                          <Button size="sm" variant="outline">
-                            Open
+                          <Button size="sm" variant="outline" rightIcon={<ArrowRight className="h-3 w-3" />}>
+                            Open Studio
                           </Button>
                         </Link>
                       </div>
@@ -278,9 +363,14 @@ export function DashboardPage() {
         {/* Right Column: Storage & Quick Actions */}
         <div className="lg:col-span-4 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>{t('dashboard.storageHealth')}</CardTitle>
-              <HardDrive className="h-4 w-4 text-[var(--text-muted)]" />
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-bold">{t('dashboard.storageHealth')}</CardTitle>
+                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">IndexedDB Local Space</p>
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg-subtle)] text-[var(--text-muted)]">
+                <HardDrive className="h-4 w-4" />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {usageStats && (
@@ -294,16 +384,19 @@ export function DashboardPage() {
                 />
               )}
 
-              <div className="space-y-2 text-xs text-[var(--text-secondary)]">
+              <div className="space-y-2.5 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)]/50 p-3 text-xs text-[var(--text-secondary)]">
                 <div className="flex items-center justify-between">
-                  <span>Persistent storage</span>
-                  <span className="font-medium text-[var(--text-primary)]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Persistent Storage
+                  </span>
+                  <span className="font-semibold text-[var(--text-primary)]">
                     {usageStats?.isPersisted ? 'Granted' : 'Standard'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Folder sync</span>
-                  <span className="font-medium text-[var(--text-primary)]">
+                  <span>Folder auto-sync</span>
+                  <span className="font-semibold text-[var(--text-primary)]">
                     {folderStatus.status === 'granted' && folderStatus.folderName
                       ? folderStatus.folderName
                       : folderStatus.status === 'prompt'
@@ -330,14 +423,15 @@ export function DashboardPage() {
                   loading={exportingBackup}
                   onClick={() => void handleExportBackup()}
                   leftIcon={<Download className="h-3.5 w-3.5" />}
+                  className="w-full justify-center"
                 >
                   {t('actions.exportBackup')}
                 </Button>
-                <Link to="/app/settings?tab=storage">
+                <Link to="/app/settings?tab=storage" className="block">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="w-full"
+                    className="w-full justify-center text-xs"
                     leftIcon={<FolderSync className="h-3.5 w-3.5" />}
                   >
                     Storage &amp; Folder Settings
@@ -349,7 +443,7 @@ export function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('dashboard.quickActions')}</CardTitle>
+              <CardTitle className="text-sm font-bold">{t('dashboard.quickActions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Link to="/app/library" className="block">
@@ -357,7 +451,7 @@ export function DashboardPage() {
                   variant="secondary"
                   size="sm"
                   className="w-full justify-start"
-                  leftIcon={<BookOpen className="h-4 w-4" />}
+                  leftIcon={<BookOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
                 >
                   {t('actions.uploadTextbook')}
                 </Button>
@@ -368,10 +462,20 @@ export function DashboardPage() {
                 className="w-full justify-start"
                 loading={loadingSample}
                 onClick={() => void handleLoadSample()}
-                leftIcon={<Sparkles className="h-4 w-4" />}
+                leftIcon={<Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
               >
                 {t('actions.loadSample')}
               </Button>
+              <Link to="/app/templates" className="block">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  leftIcon={<LayoutTemplate className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+                >
+                  Browse Board Templates
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

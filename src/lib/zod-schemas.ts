@@ -266,9 +266,11 @@ export const SettingsSchema = z.object({
   defaultSubject: z.string().max(120).default('Science'),
   language: LanguageSchema.default('en'),
   theme: ThemePreferenceSchema.default('system'),
-  aiProvider: AIProviderSchema.default('none'),
-  aiModel: z.string().max(120).default('gemini-4-hydrogen'),
-  aiApiKey: z.string().max(400).default(''),
+  aiProvider: AIProviderSchema.default('gemini'),
+  aiModel: z.string().max(120).default('gemini-3.5-flash'),
+  aiApiKey: z.string().max(400).default(
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || ''
+  ),
   proxyEndpoint: z.string().max(300).default(''),
   backupReminderDays: z.number().int().min(1).max(90).default(7),
   folderSyncEnabled: z.boolean().default(false),

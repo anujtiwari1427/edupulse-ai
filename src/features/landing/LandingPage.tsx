@@ -122,51 +122,53 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
       {/* 3-Zone Sticky Header */}
-      <header className="sticky top-0 z-40 border-b border-[var(--border-hairline)] bg-[var(--bg-page)]/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-[var(--border-hairline)] bg-[var(--bg-page)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-8 px-4 sm:px-6">
           <Link
             to="/"
-            className="text-base font-bold tracking-tight text-[var(--text-primary)] whitespace-nowrap shrink-0"
+            className="flex items-center gap-2.5 font-extrabold text-base tracking-tight text-[var(--text-primary)] whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity"
           >
-            EduPulse AI
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30">
+              <BookOpen className="h-4 w-4" />
+            </div>
+            <span>EduPulse AI</span>
           </Link>
 
           <nav
             aria-label="Primary navigation"
-            className="hidden md:flex items-center gap-7 text-sm font-medium text-[var(--text-secondary)]"
+            className="hidden md:flex items-center gap-7 text-sm font-semibold text-[var(--text-secondary)]"
           >
             <a
               href="#how-it-works"
-              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0"
+              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0 transition-colors"
             >
               How it works
             </a>
             <a
               href="#features"
-              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0"
+              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0 transition-colors"
             >
               Features
             </a>
             <a
               href="#privacy"
-              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0"
+              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0 transition-colors"
             >
               Privacy
             </a>
             <a
               href="#faq"
-              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0"
+              className="hover:text-[var(--text-primary)] hover:underline underline-offset-4 whitespace-nowrap shrink-0 transition-colors"
             >
               FAQ
             </a>
           </nav>
 
-          <div className="flex items-center shrink-0">
-            <Link
-              to="/app"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#4338ca] px-4 text-sm font-medium text-white hover:bg-[#3730a3] transition-colors whitespace-nowrap shrink-0"
-            >
-              Open Workspace
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link to="/app">
+              <Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
+                Open Workspace
+              </Button>
             </Link>
           </div>
         </div>
@@ -177,21 +179,25 @@ export function LandingPage() {
         <section className="relative overflow-hidden border-b border-[var(--border-hairline)]">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-[440px] bg-[radial-gradient(ellipse_at_top,rgba(67,56,202,0.08),transparent_70%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.14),transparent_70%)]"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(ellipse_at_top,rgba(79,70,229,0.12),transparent_70%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.18),transparent_70%)]"
           />
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 lg:py-16">
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
               {/* Left Editorial Value Proposition */}
               <div className="lg:col-span-5 flex flex-col justify-center">
-                <p className="text-xs font-medium tracking-wide text-[var(--brand-700)] dark:text-[var(--brand-500)]">
-                  CBSE · ICSE · Maharashtra State Board · Classes 1–12
-                </p>
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-50/80 dark:bg-indigo-950/60 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 shadow-xs mb-3 self-start">
+                  <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                  <span>Local-First Studio for Indian Teachers</span>
+                  <span className="text-indigo-400">·</span>
+                  <span className="text-[11px] font-normal">CBSE · ICSE · MSBSHSE</span>
+                </div>
+
                 <h1
-                  className="mt-3 font-bold tracking-tight text-[var(--text-primary)] leading-[1.1]"
-                  style={{ fontSize: 'clamp(2.25rem, 3.8vw, 3.35rem)', textWrap: 'balance' }}
+                  className="font-extrabold tracking-tight text-[var(--text-primary)] leading-[1.08]"
+                  style={{ fontSize: 'clamp(2.35rem, 4vw, 3.5rem)', textWrap: 'balance' }}
                 >
-                  Turn your textbooks into exam-ready papers in minutes
+                  Turn your textbooks into <span className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent">exam-ready papers</span> in minutes
                 </h1>
                 <p className="mt-4 max-w-xl text-base text-[var(--text-secondary)] leading-relaxed">
                   Upload your own PDFs and past question banks, lock in exact section marks and
@@ -199,7 +205,7 @@ export function LandingPage() {
                   100% locally on your device.
                 </p>
 
-                <div className="mt-7 flex flex-wrap items-center gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-3">
                   <Link to="/app">
                     <Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
                       Open Workspace
@@ -212,18 +218,27 @@ export function LandingPage() {
                   </Link>
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
-                  <span>No sign-up required</span>
+                <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    No sign-up or cloud database
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>English, हिन्दी &amp; मराठी</span>
+                  <span className="flex items-center gap-1.5">
+                    <Languages className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    English, हिन्दी &amp; मराठी
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>Offline-ready PWA</span>
+                  <span className="flex items-center gap-1.5">
+                    <FolderLock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    Offline-ready PWA
+                  </span>
                 </div>
               </div>
 
               {/* Right Expansive Interactive 3D Studio Viewport */}
               <div className="lg:col-span-7 flex flex-col">
-                <div className="relative h-[430px] sm:h-[500px] lg:h-[560px] w-full overflow-hidden rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] shadow-sm">
+                <div className="relative h-[430px] sm:h-[500px] lg:h-[560px] w-full overflow-hidden rounded-3xl border border-indigo-200/50 dark:border-indigo-900/40 bg-[var(--bg-subtle)] shadow-xl">
                   <StudioHeroCanvas
                     board={boardPreset}
                     setFocus={setFocus}
@@ -282,7 +297,7 @@ export function LandingPage() {
                               className={cn(
                                 'rounded-md px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap',
                                 boardPreset === id
-                                  ? 'bg-[#4338ca] text-white'
+                                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xs font-semibold'
                                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
                               )}
                             >

@@ -1,15 +1,21 @@
 import * as React from 'react';
 import { cn } from '@/src/lib/utils';
 
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  hoverable?: boolean;
+}
+
 export function Card({
   className,
   children,
+  hoverable = false,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)]',
+        'rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-xs transition-all duration-200',
+        hoverable && 'hover:shadow-md hover:border-[var(--border-strong)] hover:-translate-y-0.5',
         className
       )}
       {...props}

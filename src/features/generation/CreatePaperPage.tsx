@@ -19,8 +19,9 @@ import {
   createBlankBlueprint,
 } from '@/src/features/blueprint/blueprint-engine';
 import { BlueprintEditor } from '@/src/features/blueprint/BlueprintEditor';
+import { ChapterSelectDropdown } from '@/src/features/library/ChapterSelectDropdown';
 import { getErrorMessage } from '@/src/lib/errors';
-import { generateId } from '@/src/lib/utils';
+import { cn, generateId } from '@/src/lib/utils';
 import type {
   BlueprintRecord,
   BookRecord,
@@ -69,6 +70,8 @@ export function CreatePaperPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTemplateId = searchParams.get('templateId');
+  const initialBookId = searchParams.get('bookId');
+  const initialChapters = searchParams.get('chapters')?.split(',').filter(Boolean);
   const addToast = useUIStore((s) => s.addToast);
 
   const books = useLiveQuery(() => repository.libraryRepo.listBooks(), [], EMPTY_BOOKS);
@@ -79,8 +82,12 @@ export function CreatePaperPage() {
   const settings = useLiveQuery(() => repository.settingsRepo.get(), []);
 
   const [step, setStep] = React.useState<1 | 2 | 3 | 4>(initialTemplateId ? 2 : 1);
-  const [selectedBookIds, setSelectedBookIds] = React.useState<string[]>([]);
-  const [selectedChapterIds, setSelectedChapterIds] = React.useState<string[]>([]);
+  const [selectedBookIds, setSelectedBookIds] = React.useState<string[]>(() =>
+    initialBookId ? [initialBookId] : []
+  );
+  const [selectedChapterIds, setSelectedChapterIds] = React.useState<string[]>(
+    () => initialChapters ?? []
+  );
   const [blueprint, setBlueprint] = React.useState<BlueprintRecord>(() => createBlankBlueprint());
   const [appliedTemplateId, setAppliedTemplateId] = React.useState<string>('blank');
 
@@ -259,7 +266,7 @@ export function CreatePaperPage() {
       </div>
 
       {/* Stepper */}
-      <nav aria-label="Paper creation steps" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <nav aria-label="Paper creation steps" className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {STEPS.map((s) => {
           const isCurrent = step === s.id;
           const isDone = step > s.id || (s.id === 4 && Boolean(result));
@@ -269,18 +276,28 @@ export function CreatePaperPage() {
               type="button"
               disabled={generating || (s.id === 4 && !result && !generating)}
               onClick={() => setStep(s.id)}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors cursor-pointer disabled:cursor-default ${
+              className={cn(
+                'flex items-center gap-2.5 rounded-xl border p-3 text-left text-xs font-semibold transition-all duration-150 cursor-pointer disabled:cursor-default',
                 isCurrent
-                  ? 'border-[var(--brand-600)] bg-[var(--brand-50)] text-[var(--brand-700)] dark:text-[var(--brand-500)]'
+                  ? 'border-indigo-500 bg-indigo-50/80 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-600 shadow-xs ring-2 ring-indigo-500/20'
                   : isDone
-                    ? 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)]'
-                    : 'border-[var(--border-hairline)] bg-[var(--bg-subtle)] text-[var(--text-muted)]'
-              }`}
-            >
-              <span className="truncate">{s.label}</span>
-              {isDone && !isCurrent && (
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[var(--success-text)]" />
+                    ? 'border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                    : 'border-[var(--border-hairline)] bg-[var(--bg-subtle)]/60 text-[var(--text-muted)]'
               )}
+            >
+              <span
+                className={cn(
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-colors',
+                  isCurrent
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : isDone
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-[var(--bg-muted)] text-[var(--text-muted)]'
+                )}
+              >
+                {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.id}
+              </span>
+              <span className="truncate">{s.label.replace(/^\d+\.\s*/, '')}</span>
             </button>
           );
         })}
@@ -344,31 +361,25 @@ export function CreatePaperPage() {
               <Card>
                 <CardHeader>
                   <div>
-                    <CardTitle>Select Chapters ({scopedChapters.length})</CardTitle>
+                    <CardTitle>Syllabus Chapters ({scopedChapters.length})</CardTitle>
                     <CardDescription>
-                      Scope paper generation to specific chapters or leave unchecked for full syllabus.
+                      Use the dropdown menu to select specific chapters or include the entire syllabus.
                     </CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2.5 max-h-72 overflow-y-auto">
+                <CardContent className="space-y-4">
                   {scopedChapters.length === 0 ? (
                     <p className="text-xs text-[var(--text-muted)]">
                       No chapters detected yet. You can still generate using bank questions.
                     </p>
                   ) : (
-                    scopedChapters.map((ch) => (
-                      <Checkbox
-                        key={ch.id}
-                        checked={selectedChapterIds.includes(ch.id)}
-                        onCheckedChange={(checked) => {
-                          setSelectedChapterIds((prev) =>
-                            checked ? [...prev, ch.id] : prev.filter((id) => id !== ch.id)
-                          );
-                        }}
-                        label={ch.title}
-                        description={`Pages ${ch.startPage}–${ch.endPage}`}
-                      />
-                    ))
+                    <ChapterSelectDropdown
+                      chapters={scopedChapters}
+                      selectedChapterIds={selectedChapterIds}
+                      onChange={setSelectedChapterIds}
+                      label="Select Chapters from Dropdown Menu"
+                      placeholder="Choose chapters to test in this paper…"
+                    />
                   )}
                 </CardContent>
               </Card>

@@ -14,6 +14,8 @@ import {
   type LanguageCode,
 } from '@/src/lib/zod-schemas';
 import { detectChaptersFromPages } from './chapter-detector';
+import { detectChaptersWithAI } from './ai-chapter-service';
+import { isAIConfigured } from '@/src/features/generation/ai-providers';
 import { chunkPages } from './chunker';
 import { ocrImageFile, ocrScannedPdfPages } from './ocr-service';
 import { parseQuestionBankText } from './question-parser';
@@ -28,6 +30,7 @@ export interface StartIngestionInput {
   language: LanguageCode;
   sourceType: 'textbook' | 'question_bank';
   ocrEnabled: boolean;
+  aiChapterDetection?: boolean;
   copyrightConfirmed: boolean;
   defaultMarks?: number;
 }
@@ -135,6 +138,7 @@ export async function startIngestionJob(input: StartIngestionInput): Promise<{
     subject: input.subject.trim() || 'General',
     language: input.language,
     ocrEnabled: input.ocrEnabled,
+    aiChapterDetection: input.aiChapterDetection ?? true,
     totalPages: 0,
     lastProcessedPage: 0,
     stage: 'parsing',
@@ -373,7 +377,40 @@ async function executeCheckpointPipeline(
     }
 
     // Stage 3B: Chapter Detection & Chunking for Textbooks
-    const detected = detectChaptersFromPages(checkpoint.pages, checkpoint.outline);
+    let detected = detectChaptersFromPages(checkpoint.pages, checkpoint.outline);
+
+    // If AI chapter detection is enabled, attempt Gemini AI-driven syllabus and chapter extraction
+    if (checkpoint.aiChapterDetection !== false) {
+      try {
+        const settings = await repository.settingsRepo.get();
+        if (settings && isAIConfigured(settings)) {
+          await repository.jobsRepo.updateJobProgress(jobId, {
+            title: `Analyzing chapters & syllabus with Gemini AI…`,
+            progress: 90,
+          });
+          const aiDetected = await detectChaptersWithAI(
+            checkpoint.pages,
+            {
+              bookId: checkpoint.bookId,
+              title: checkpoint.fileName,
+              board: checkpoint.board,
+              classLevel: checkpoint.classLevel,
+              subject: checkpoint.subject,
+              language: checkpoint.language,
+            },
+            checkpoint.outline,
+            settings
+          );
+          if (aiDetected && aiDetected.length > 0) {
+            detected = aiDetected;
+          }
+        }
+      } catch (aiErr) {
+        // Fall back gracefully to heuristic detection
+        console.warn('AI chapter detection fallback to regex heuristic:', aiErr);
+      }
+    }
+
     const chapters: ChapterRecord[] = detected.map((ch) =>
       ChapterSchema.parse({
         id: `${checkpoint.bookId}_ch_${ch.order}`,

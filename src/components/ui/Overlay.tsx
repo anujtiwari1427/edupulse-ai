@@ -35,16 +35,16 @@ export function Modal({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[1px]" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity" />
         <DialogPrimitive.Content
           className={cn(
-            'pointer-events-auto fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-xl outline-none max-h-[90vh] flex flex-col',
+            'pointer-events-auto fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-2xl outline-none max-h-[90vh] flex flex-col ring-1 ring-black/10',
             modalSizes[size]
           )}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-[var(--border-hairline)] px-6 py-4">
+          <div className="flex items-start justify-between gap-4 border-b border-[var(--border-hairline)] px-6 py-5">
             <div>
-              <DialogPrimitive.Title className="text-base font-semibold text-[var(--text-primary)]">
+              <DialogPrimitive.Title className="text-base font-bold text-[var(--text-primary)]">
                 {title}
               </DialogPrimitive.Title>
               {description && (
@@ -55,14 +55,14 @@ export function Modal({
             </div>
             <DialogPrimitive.Close
               aria-label="Close modal"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] cursor-pointer"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
             >
               <X className="h-4 w-4" />
             </DialogPrimitive.Close>
           </div>
           <div className="overflow-y-auto px-6 py-5">{children}</div>
           {footer && (
-            <div className="flex items-center justify-end gap-2.5 border-t border-[var(--border-hairline)] px-6 py-4">
+            <div className="flex items-center justify-end gap-2.5 border-t border-[var(--border-hairline)] px-6 py-4 bg-[var(--bg-subtle)]/30 rounded-b-2xl">
               {footer}
             </div>
           )}
@@ -142,7 +142,7 @@ export const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[180px] rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1 shadow-lg outline-none',
+        'z-50 min-w-[180px] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1.5 shadow-xl outline-none ring-1 ring-black/5 backdrop-blur-md',
         className
       )}
       {...props}
@@ -158,7 +158,7 @@ export const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none data-[highlighted]:bg-[var(--bg-subtle)]',
+      'flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-[var(--text-primary)] outline-none data-[highlighted]:bg-indigo-50/80 dark:data-[highlighted]:bg-indigo-950/60 data-[highlighted]:text-indigo-700 dark:data-[highlighted]:text-indigo-300 transition-colors',
       className
     )}
     {...props}

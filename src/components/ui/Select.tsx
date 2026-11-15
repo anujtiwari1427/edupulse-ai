@@ -34,7 +34,7 @@ export function Select({
       <SelectPrimitive.Trigger
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] hover:border-[var(--text-muted)] disabled:opacity-50 cursor-pointer',
+          'inline-flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] hover:border-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-indigo-500/25 focus-visible:border-indigo-500 shadow-2xs disabled:opacity-50 cursor-pointer transition-all',
           className
         )}
       >
@@ -47,14 +47,14 @@ export function Select({
         <SelectPrimitive.Content
           position="popper"
           sideOffset={6}
-          className="z-50 max-h-64 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-lg"
+          className="z-50 max-h-64 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-xl"
         >
-          <SelectPrimitive.Viewport className="p-1">
+          <SelectPrimitive.Viewport className="p-1.5">
             {options.map((opt) => (
               <SelectPrimitive.Item
                 key={opt.value}
                 value={opt.value}
-                className="relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-3 text-sm text-[var(--text-primary)] outline-none data-[highlighted]:bg-[var(--bg-subtle)]"
+                className="relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm text-[var(--text-primary)] outline-none data-[highlighted]:bg-indigo-50/80 dark:data-[highlighted]:bg-indigo-950/60 data-[highlighted]:text-indigo-700 dark:data-[highlighted]:text-indigo-300 transition-colors"
               >
                 <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center">
                   <SelectPrimitive.ItemIndicator>

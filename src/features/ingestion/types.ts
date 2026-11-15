@@ -31,6 +31,7 @@ export interface IngestCheckpoint {
   subject: string;
   language: LanguageCode;
   ocrEnabled: boolean;
+  aiChapterDetection?: boolean;
   totalPages: number;
   lastProcessedPage: number;
   stage: 'parsing' | 'ocr' | 'chunking' | 'parsing_bank' | 'done';

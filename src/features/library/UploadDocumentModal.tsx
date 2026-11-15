@@ -57,6 +57,7 @@ function UploadDocumentModalInner({
   const [subject, setSubject] = React.useState(defaultSubject);
   const [language, setLanguage] = React.useState<LanguageCode>(defaultLanguage);
   const [ocrEnabled, setOcrEnabled] = React.useState(true);
+  const [aiChapterDetection, setAiChapterDetection] = React.useState(true);
   const [defaultMarks, setDefaultMarks] = React.useState('1');
   const [copyrightConfirmed, setCopyrightConfirmed] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -95,6 +96,7 @@ function UploadDocumentModalInner({
         language,
         sourceType,
         ocrEnabled,
+        aiChapterDetection: sourceType === 'textbook' ? aiChapterDetection : false,
         copyrightConfirmed,
         defaultMarks: Math.max(1, Number(defaultMarks) || 1),
       });
@@ -244,6 +246,15 @@ function UploadDocumentModalInner({
               onChange={(e) => setDefaultMarks(e.target.value)}
             />
           </div>
+        )}
+
+        {sourceType === 'textbook' && (
+          <Switch
+            checked={aiChapterDetection}
+            onCheckedChange={setAiChapterDetection}
+            label="✨ AI Chapter & Syllabus Understanding (Gemini)"
+            description="Uses Gemini 3.5 Flash to analyze document TOC and structure for precise chapter boundaries and topics."
+          />
         )}
 
         <Switch

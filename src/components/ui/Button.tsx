@@ -15,21 +15,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#4338ca] text-white hover:bg-[#3730a3] active:bg-[#312e81] dark:bg-[#4f46e5] dark:hover:bg-[#4338ca] border border-transparent shadow-xs',
+    'bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-indigo-700 active:from-indigo-700 active:to-indigo-800 text-white border border-indigo-400/30 shadow-sm shadow-indigo-500/25 dark:from-indigo-500 dark:via-indigo-600 dark:to-indigo-600 dark:hover:from-indigo-400 dark:hover:to-indigo-500 dark:shadow-indigo-900/40',
   secondary:
-    'bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] border border-[var(--border-hairline)]',
+    'bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-muted)] border border-[var(--border-hairline)] hover:border-[var(--border-strong)] shadow-xs',
   outline:
-    'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-strong)]',
+    'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-strong)] hover:border-[var(--text-muted)] active:bg-[var(--bg-muted)]',
   ghost:
-    'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent',
+    'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent active:bg-[var(--bg-muted)]',
   danger:
-    'bg-[var(--danger-bg)] text-[var(--danger-text)] hover:opacity-90 border border-[var(--danger-border)]',
+    'bg-[var(--danger-bg)] text-[var(--danger-text)] hover:opacity-95 active:opacity-90 border border-[var(--danger-border)] shadow-xs',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-xs rounded-lg gap-1.5',
-  md: 'h-10 px-4 text-sm rounded-lg gap-2',
-  lg: 'h-11 px-5 text-sm rounded-lg gap-2',
+  sm: 'h-9 px-3 text-xs rounded-lg gap-1.5 font-medium',
+  md: 'h-10 px-4 text-sm rounded-lg gap-2 font-medium',
+  lg: 'h-11 px-5 text-sm rounded-xl gap-2.5 font-medium',
   icon: 'h-10 w-10 rounded-lg p-0 justify-center',
 };
 
@@ -57,7 +57,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         aria-busy={loading || undefined}
         className={cn(
-          'inline-flex items-center justify-center font-medium whitespace-nowrap shrink-0 transition-colors duration-150 select-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none',
+          'inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-all duration-150 select-none cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100',
           variantClasses[variant],
           sizeClasses[size],
           className

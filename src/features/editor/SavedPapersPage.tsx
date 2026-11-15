@@ -1,7 +1,20 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Copy, Download, FilePlus2, FileText, History, Search, Trash2, Upload } from 'lucide-react';
+import {
+  ArrowRight,
+  Copy,
+  Download,
+  FilePlus2,
+  FileText,
+  History,
+  LayoutGrid,
+  List,
+  Search,
+  Sparkles,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useUIStore } from '@/src/app/store';
 import { parseImportedPaperJson } from '@/src/features/export/json-exporter';
 import { runPaperExport, type PaperExportFormat } from '@/src/features/export/export-service';
@@ -32,6 +45,7 @@ export function SavedPapersPage() {
     useLiveQuery(() => repository.papersRepo.listPapers(), [], EMPTY_PAPERS) ?? EMPTY_PAPERS;
   const addToast = useUIStore((s) => s.addToast);
 
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [query, setQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'all' | PaperStatus>('all');
   const [historyPaper, setHistoryPaper] = React.useState<PaperRecord | null>(null);
@@ -179,33 +193,63 @@ export function SavedPapersPage() {
             />
           </div>
 
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-hairline)] self-start">
-            {(['all', 'draft', 'finalized', 'archived'] as const).map((status) => (
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] self-start">
+              {(['all', 'draft', 'finalized', 'archived'] as const).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    statusFilter === status
+                      ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="hidden sm:flex items-center rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-0.5">
               <button
-                key={status}
                 type="button"
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  statusFilter === status
-                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
+                title="Grid View"
               >
-                {status}
+                <LayoutGrid className="h-4 w-4" />
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                title="List View"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {papers.length === 0 ? (
         <EmptyState
-          icon={<FileText className="h-5 w-5" />}
+          icon={<FileText className="h-6 w-6" />}
           title="No saved papers yet"
           description="Create a blueprint or load the Class 10 Science sample pack from the Dashboard."
           action={
             <Link to="/app">
-              <Button size="sm" variant="outline">
+              <Button size="md" variant="primary" leftIcon={<Sparkles className="h-4 w-4" />}>
                 Go to Dashboard
               </Button>
             </Link>
@@ -213,22 +257,148 @@ export function SavedPapersPage() {
         />
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<Search className="h-5 w-5" />}
+          icon={<Search className="h-6 w-6" />}
           title="No papers match your filter"
           description="Clear the search box or switch the status filter tab."
         />
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((paper) => {
+            const boardTone =
+              paper.blueprintSnapshot.header.board === 'CBSE'
+                ? 'brand'
+                : paper.blueprintSnapshot.header.board === 'ICSE'
+                  ? 'info'
+                  : 'warning';
+
+            return (
+              <Card key={paper.id} hoverable className="flex flex-col justify-between group">
+                <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <Badge tone={boardTone as any} dot>
+                        {paper.blueprintSnapshot.header.board}
+                      </Badge>
+                      <Badge
+                        tone={
+                          paper.status === 'finalized'
+                            ? 'success'
+                            : paper.status === 'archived'
+                              ? 'warning'
+                              : 'neutral'
+                        }
+                      >
+                        {paper.status}
+                      </Badge>
+                    </div>
+
+                    <div>
+                      <Link
+                        to={`/app/editor/${paper.id}`}
+                        className="text-base font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-2 transition-colors"
+                      >
+                        {paper.title}
+                      </Link>
+                      <MetaLine
+                        className="mt-1.5"
+                        items={[
+                          `Class ${paper.blueprintSnapshot.header.classLevel}`,
+                          paper.blueprintSnapshot.header.subject,
+                          `${paper.blueprintSnapshot.totalMarks} Marks`,
+                        ]}
+                      />
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        Updated {formatRelativeTime(paper.updatedAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3.5 flex items-center justify-between border-t border-[var(--border-hairline)] gap-1.5">
+                    <Link to={`/app/editor/${paper.id}`} className="flex-1">
+                      <Button size="sm" className="w-full justify-center">
+                        Open Studio
+                      </Button>
+                    </Link>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Version history for ${paper.title}`}
+                      onClick={() => void handleOpenHistory(paper)}
+                      title="Version History"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          loading={exportingId === paper.id}
+                          aria-label={`Quick export ${paper.title}`}
+                          title="Quick export"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => void handleQuickExport(paper, 'pdf')}>
+                          Export PDF (Set A)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => void handleQuickExport(paper, 'answer_key_pdf')}
+                        >
+                          Export Answer Key PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => void handleQuickExport(paper, 'docx')}>
+                          Export DOCX (Set A)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => void handleQuickExport(paper, 'json')}>
+                          Export Portable JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Delete ${paper.title}`}
+                      onClick={() => void handleDeletePaper(paper.id, paper.title)}
+                    >
+                      <Trash2 className="h-4 w-4 text-[var(--danger-text)]" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((paper) => (
-            <Card key={paper.id}>
-              <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <Card key={paper.id} hoverable>
+              <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5">
                 <div className="min-w-0">
-                  <Link
-                    to={`/app/editor/${paper.id}`}
-                    className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--brand-700)] dark:hover:text-[var(--brand-500)]"
-                  >
-                    {paper.title}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/app/editor/${paper.id}`}
+                      className="text-sm font-bold text-[var(--text-primary)] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      {paper.title}
+                    </Link>
+                    <Badge
+                      tone={
+                        paper.status === 'finalized'
+                          ? 'success'
+                          : paper.status === 'archived'
+                            ? 'warning'
+                            : 'neutral'
+                      }
+                    >
+                      {paper.status}
+                    </Badge>
+                  </div>
                   <MetaLine
                     className="mt-1"
                     items={[
@@ -241,20 +411,9 @@ export function SavedPapersPage() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                  <Badge
-                    tone={
-                      paper.status === 'finalized'
-                        ? 'success'
-                        : paper.status === 'archived'
-                          ? 'warning'
-                          : 'neutral'
-                    }
-                  >
-                    {paper.status}
-                  </Badge>
                   <Link to={`/app/editor/${paper.id}`}>
                     <Button size="sm" variant="outline">
-                      Open
+                      Open Studio
                     </Button>
                   </Link>
                   <Button

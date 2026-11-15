@@ -51,6 +51,10 @@ export interface StorageUsageStats {
   };
 }
 
+export const DEFAULT_AI_KEY =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || '';
+export const DEFAULT_AI_MODEL = 'gemini-3.5-flash';
+
 export const DEFAULT_SETTINGS: SettingsRecord = {
   id: 'default',
   teacherName: '',
@@ -60,9 +64,9 @@ export const DEFAULT_SETTINGS: SettingsRecord = {
   defaultSubject: 'Science',
   language: 'en',
   theme: 'system',
-  aiProvider: 'none',
-  aiModel: 'gemini-4-hydrogen',
-  aiApiKey: '',
+  aiProvider: 'gemini',
+  aiModel: DEFAULT_AI_MODEL,
+  aiApiKey: DEFAULT_AI_KEY,
   proxyEndpoint: '',
   backupReminderDays: 7,
   folderSyncEnabled: false,
@@ -81,7 +85,20 @@ export function createRepository(database: EduPulseDB = db) {
       const existing = await database.settings.get('default');
       if (existing) {
         const parsed = SettingsSchema.safeParse(existing);
-        if (parsed.success) return parsed.data;
+        if (parsed.success) {
+          if ((!parsed.data.aiApiKey && DEFAULT_AI_KEY) || parsed.data.aiProvider === 'none') {
+            const updated = {
+              ...parsed.data,
+              aiProvider: 'gemini' as const,
+              aiModel: parsed.data.aiModel && parsed.data.aiModel !== 'gemini-4-hydrogen' ? parsed.data.aiModel : DEFAULT_AI_MODEL,
+              aiApiKey: parsed.data.aiApiKey || DEFAULT_AI_KEY,
+              updatedAt: Date.now(),
+            };
+            await database.settings.put(updated);
+            return updated;
+          }
+          return parsed.data;
+        }
       }
       return { ...DEFAULT_SETTINGS };
     },

@@ -21,10 +21,10 @@ export interface AICompletionResult {
 
 export const DEFAULT_MODELS_BY_PROVIDER: Record<AIProviderType, string[]> = {
   none: [],
-  gemini: ['gemini-4-hydrogen', 'gemini-4-argon'],
+  gemini: ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'],
   openai: ['gpt-4o-mini', 'gpt-4o'],
   anthropic: ['claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest'],
-  proxy: ['gemini-4-hydrogen'],
+  proxy: ['gemini-3.5-flash'],
 };
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);

@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   BookOpen,
   Edit3,
+  FilePlus2,
   ListTree,
   Pause,
   Play,
@@ -56,6 +57,7 @@ import {
 import { UploadDocumentModal } from './UploadDocumentModal';
 import { ChapterManagerModal } from './ChapterManagerModal';
 import { QuestionEditorModal } from './QuestionEditorModal';
+import { QuickGeneratePaperModal } from './QuickGeneratePaperModal';
 
 const EMPTY_BOOKS: BookRecord[] = [];
 const EMPTY_QUESTIONS: QuestionRecord[] = [];
@@ -76,6 +78,8 @@ export function LibraryPage() {
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
   const [uploadType, setUploadType] = React.useState<'textbook' | 'question_bank'>('textbook');
   const [chapterManagerBook, setChapterManagerBook] = React.useState<BookRecord | null>(null);
+  const [quickGenOpen, setQuickGenOpen] = React.useState(false);
+  const [quickGenBook, setQuickGenBook] = React.useState<BookRecord | null>(null);
   const [editingQuestion, setEditingQuestion] = React.useState<QuestionRecord | null>(null);
   const [questionModalOpen, setQuestionModalOpen] = React.useState(false);
   const [deleteBookTarget, setDeleteBookTarget] = React.useState<BookRecord | null>(null);
@@ -218,7 +222,11 @@ export function LibraryPage() {
       key: 'type',
       header: 'Type',
       sortValue: (q) => q.type,
-      render: (q) => <span className="text-xs capitalize">{q.type.replace('_', ' ')}</span>,
+      render: (q) => (
+        <span className="inline-flex items-center rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+          {q.type.replace('_', ' ')}
+        </span>
+      ),
     },
     {
       key: 'difficulty',
@@ -230,9 +238,10 @@ export function LibraryPage() {
             q.difficulty === 'easy'
               ? 'success'
               : q.difficulty === 'hard'
-                ? 'warning'
-                : 'neutral'
+                ? 'danger'
+                : 'warning'
           }
+          dot
         >
           {q.difficulty}
         </Badge>
@@ -242,14 +251,22 @@ export function LibraryPage() {
       key: 'bloom',
       header: 'Bloom',
       sortValue: (q) => q.bloom,
-      render: (q) => <span className="text-xs capitalize">{q.bloom}</span>,
+      render: (q) => (
+        <Badge tone="brand">
+          {q.bloom}
+        </Badge>
+      ),
     },
     {
       key: 'marks',
       header: 'Marks',
       align: 'right',
       sortValue: (q) => q.marks,
-      render: (q) => <span className="text-xs">{q.marks}</span>,
+      render: (q) => (
+        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50">
+          {q.marks}M
+        </span>
+      ),
     },
     {
       key: 'actions',
@@ -305,6 +322,18 @@ export function LibraryPage() {
           >
             Search Textbook Chunks
           </Button>
+          {books.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setQuickGenBook(null);
+                setQuickGenOpen(true);
+              }}
+              leftIcon={<Sparkles className="h-3.5 w-3.5 text-indigo-200" />}
+            >
+              Generate Paper from Chapters
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={() => {
@@ -431,26 +460,30 @@ export function LibraryPage() {
           {books.map((book) => {
             const bookChapterCount = chapters.filter((c) => c.bookId === book.id).length;
             return (
-              <Card key={book.id}>
-                <CardContent className="space-y-3">
+              <Card key={book.id} hoverable className="group">
+                <CardContent className="space-y-4 p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                        {book.title}
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50 shadow-xs">
+                        <BookOpen className="h-5 w-5" />
                       </div>
-                      <MetaLine
-                        className="mt-1"
-                        items={[
-                          book.sourceType === 'textbook' ? 'Textbook' : 'Question Bank',
-                          book.board,
-                          `Class ${book.classLevel}`,
-                          book.subject,
-                          `${book.pageCount} pages`,
-                          book.sourceType === 'textbook'
-                            ? `${bookChapterCount} chapters · ${book.chunkCount} chunks`
-                            : `${book.chunkCount} items`,
-                        ]}
-                      />
+                      <div className="min-w-0">
+                        <div className="text-base font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate transition-colors">
+                          {book.title}
+                        </div>
+                        <MetaLine
+                          className="mt-1"
+                          items={[
+                            book.board,
+                            `Class ${book.classLevel}`,
+                            book.subject,
+                            `${book.pageCount} pages`,
+                            book.sourceType === 'textbook'
+                              ? `${bookChapterCount} chapters · ${book.chunkCount} chunks`
+                              : `${book.chunkCount} items`,
+                          ]}
+                        />
+                      </div>
                     </div>
                     <Badge
                       tone={
@@ -460,21 +493,34 @@ export function LibraryPage() {
                             ? 'danger'
                             : 'brand'
                       }
+                      dot
                     >
                       {book.status}
                     </Badge>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-hairline)]">
                     {book.sourceType === 'textbook' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setChapterManagerBook(book)}
-                        leftIcon={<ListTree className="h-3.5 w-3.5" />}
-                      >
-                        Chapter Manager
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setQuickGenBook(book);
+                            setQuickGenOpen(true);
+                          }}
+                          leftIcon={<FilePlus2 className="h-3.5 w-3.5" />}
+                        >
+                          Generate Paper
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setChapterManagerBook(book)}
+                          leftIcon={<ListTree className="h-3.5 w-3.5" />}
+                        >
+                          Chapter Manager ({bookChapterCount})
+                        </Button>
+                      </>
                     )}
                     <Button
                       size="sm"
@@ -655,6 +701,12 @@ export function LibraryPage() {
         book={chapterManagerBook}
         open={Boolean(chapterManagerBook)}
         onOpenChange={(open) => !open && setChapterManagerBook(null)}
+      />
+
+      <QuickGeneratePaperModal
+        open={quickGenOpen}
+        onOpenChange={setQuickGenOpen}
+        initialBook={quickGenBook}
       />
 
       <QuestionEditorModal

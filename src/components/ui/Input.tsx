@@ -50,11 +50,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={Boolean(error) || undefined}
             aria-describedby={error ? errorId : hint ? hintId : undefined}
             className={cn(
-              'h-10 w-full rounded-lg border bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors',
+              'h-10 w-full rounded-xl border bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all shadow-2xs',
               leftAdornment ? 'pl-9' : '',
               error
-                ? 'border-[var(--danger-border)] focus-visible:outline-[var(--danger-text)]'
-                : 'border-[var(--border-strong)] hover:border-[var(--text-muted)]',
+                ? 'border-[var(--danger-border)] focus-visible:ring-2 focus-visible:ring-rose-500/25 focus-visible:border-rose-500'
+                : 'border-[var(--border-strong)] hover:border-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-indigo-500/25 focus-visible:border-indigo-500',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               className
             )}
@@ -97,10 +97,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={Boolean(error) || undefined}
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={cn(
-            'w-full rounded-lg border bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors',
+            'w-full rounded-xl border bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all shadow-2xs',
             error
-              ? 'border-[var(--danger-border)]'
-              : 'border-[var(--border-strong)] hover:border-[var(--text-muted)]',
+              ? 'border-[var(--danger-border)] focus-visible:ring-2 focus-visible:ring-rose-500/25 focus-visible:border-rose-500'
+              : 'border-[var(--border-strong)] hover:border-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-indigo-500/25 focus-visible:border-indigo-500',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             className
           )}

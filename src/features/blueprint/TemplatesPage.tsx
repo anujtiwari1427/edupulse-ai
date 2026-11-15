@@ -17,7 +17,7 @@ import {
   Modal,
   Select,
 } from '@/src/components/ui';
-import { calculateBlueprintSummary, createBlankBlueprint } from './blueprint-engine';
+import { calculateBlueprintSummary, createBlankBlueprint, getSectionMarks } from './blueprint-engine';
 import { BlueprintEditor } from './BlueprintEditor';
 
 const EMPTY_TEMPLATES: TemplateRecord[] = [];
@@ -129,72 +129,103 @@ export function TemplatesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {filtered.map((tpl) => (
-          <Card key={tpl.id} className="flex flex-col justify-between">
-            <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-50)] text-[var(--brand-700)] dark:text-[var(--brand-500)]">
-                    <LayoutTemplate className="h-4 w-4" />
-                  </div>
-                  <Badge tone={tpl.isBuiltIn ? 'brand' : 'neutral'}>
-                    {tpl.isBuiltIn ? 'Built-in' : 'Custom'}
-                  </Badge>
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-[var(--text-primary)]">{tpl.name}</h2>
-                  <MetaLine
-                    className="mt-1"
-                    items={[
-                      tpl.board,
-                      `Class ${tpl.classLevel}`,
-                      `${tpl.blueprint.totalMarks} Marks`,
-                      `${tpl.blueprint.sections.length} sections`,
-                    ]}
-                  />
-                  <p className="mt-2 text-xs text-[var(--text-secondary)] leading-relaxed">
-                    {tpl.description}
-                  </p>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filtered.map((tpl) => {
+          const boardTone =
+            tpl.board === 'CBSE'
+              ? 'brand'
+              : tpl.board === 'ICSE'
+                ? 'info'
+                : tpl.board === 'MAHARASHTRA'
+                  ? 'warning'
+                  : 'neutral';
 
-              <div className="pt-3 flex flex-wrap items-center gap-2 border-t border-[var(--border-hairline)]">
-                <Link to={`/app/create?templateId=${encodeURIComponent(tpl.id)}`}>
-                  <Button size="sm">Use Template</Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void handleCloneTemplate(tpl)}
-                  leftIcon={<Copy className="h-3.5 w-3.5" />}
-                >
-                  Clone
-                </Button>
-                {!tpl.isBuiltIn && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Edit template"
-                      onClick={() => setEditingTemplate(tpl)}
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
+          return (
+            <Card key={tpl.id} hoverable className="flex flex-col justify-between group">
+              <CardContent className="space-y-4 flex-1 flex flex-col justify-between p-5">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50 shadow-xs">
+                        <LayoutTemplate className="h-4 w-4" />
+                      </div>
+                      <Badge tone={boardTone as any} dot>
+                        {tpl.board}
+                      </Badge>
+                    </div>
+                    <Badge tone={tpl.isBuiltIn ? 'brand' : 'neutral'}>
+                      {tpl.isBuiltIn ? 'Verified Pattern' : 'Custom'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {tpl.name}
+                    </h2>
+                    <MetaLine
+                      className="mt-1"
+                      items={[
+                        `Class ${tpl.classLevel}`,
+                        `${tpl.blueprint.totalMarks} Marks`,
+                        `${tpl.blueprint.sections.length} sections`,
+                      ]}
+                    />
+                    <p className="mt-2 text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+                      {tpl.description}
+                    </p>
+                  </div>
+
+                  {/* Section Breakdown Pills */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {tpl.blueprint.sections.map((sec, idx) => (
+                      <span
+                        key={sec.id || idx}
+                        className="inline-flex items-center rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] border border-[var(--border-hairline)]"
+                      >
+                        {sec.name} ({getSectionMarks(sec)}M)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3.5 flex flex-wrap items-center gap-2 border-t border-[var(--border-hairline)]">
+                  <Link to={`/app/create?templateId=${encodeURIComponent(tpl.id)}`} className="flex-1">
+                    <Button size="sm" className="w-full justify-center">
+                      Use Template
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Delete template"
-                      onClick={() => void repository.papersRepo.deleteTemplate(tpl.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleCloneTemplate(tpl)}
+                    leftIcon={<Copy className="h-3.5 w-3.5" />}
+                  >
+                    Clone
+                  </Button>
+                  {!tpl.isBuiltIn && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Edit template"
+                        onClick={() => setEditingTemplate(tpl)}
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Delete template"
+                        onClick={() => void repository.papersRepo.deleteTemplate(tpl.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Custom Template Editor Modal */}

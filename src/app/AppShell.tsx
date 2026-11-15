@@ -7,6 +7,7 @@ import {
   FileText,
   HelpCircle,
   Home,
+  Languages,
   LayoutTemplate,
   Loader2,
   Menu,
@@ -14,8 +15,11 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Plus,
   Search,
   Settings,
+  ShieldCheck,
+  Sparkles,
   Sun,
   X,
 } from 'lucide-react';
@@ -27,7 +31,9 @@ import type { LanguageCode, ThemePreference } from '@/src/lib/zod-schemas';
 import { ensureBuiltInTemplatesSeeded, repository } from '@/src/features/storage/repository';
 import { loadSampleClass10Library } from '@/src/features/storage/sample-data';
 import {
+  Badge,
   Breadcrumbs,
+  Button,
   CommandPalette,
   DropdownMenu,
   DropdownMenuContent,
@@ -149,34 +155,63 @@ export function AppShell() {
       <aside
         aria-label="Workspace navigation"
         className={cn(
-          'no-print hidden md:flex flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] transition-[width] duration-150 shrink-0',
-          sidebarCollapsed ? 'w-16' : 'w-60'
+          'no-print hidden md:flex flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] transition-[width] duration-200 shrink-0 select-none shadow-xs',
+          sidebarCollapsed ? 'w-16' : 'w-64'
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b border-[var(--border-hairline)] px-3.5">
-          {!sidebarCollapsed && (
+        <div className="flex h-16 items-center justify-between border-b border-[var(--border-hairline)] px-4">
+          {!sidebarCollapsed ? (
             <Link
               to="/"
-              className="text-sm font-bold tracking-tight text-[var(--text-primary)] whitespace-nowrap"
+              className="flex items-center gap-2.5 text-sm font-bold tracking-tight text-[var(--text-primary)] hover:opacity-90 transition-opacity"
             >
-              EduPulse AI
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="leading-tight font-extrabold tracking-tight">EduPulse AI</span>
+                <span className="text-[10px] font-medium text-[var(--text-muted)] tracking-wider uppercase">Studio v2.0</span>
+              </div>
+            </Link>
+          ) : (
+            <Link
+              to="/"
+              className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-500 text-white shadow-xs shadow-indigo-500/30"
+              title="EduPulse AI"
+            >
+              <Sparkles className="h-4 w-4" />
             </Link>
           )}
+
           <button
             type="button"
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] cursor-pointer"
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
+            className={cn(
+              'inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] cursor-pointer transition-colors',
+              sidebarCollapsed && 'hidden'
             )}
+          >
+            <PanelLeftClose className="h-4 w-4" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-2.5">
+        {/* Quick Action Button */}
+        {!sidebarCollapsed && (
+          <div className="p-3 pb-1">
+            <Link to="/app/create" className="block">
+              <Button
+                size="sm"
+                className="w-full justify-start text-xs font-semibold py-2"
+                leftIcon={<Plus className="h-3.5 w-3.5" />}
+              >
+                {t('actions.createPaper')}
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        <nav className="flex-1 space-y-1 p-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -186,10 +221,10 @@ export function AppShell() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors whitespace-nowrap',
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 whitespace-nowrap',
                     isActive
-                      ? 'bg-[var(--brand-50)] text-[var(--brand-700)] dark:text-[var(--brand-500)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
+                      ? 'bg-gradient-to-r from-indigo-50 to-indigo-50/40 text-indigo-700 dark:from-indigo-950/70 dark:to-indigo-950/20 dark:text-indigo-300 font-semibold shadow-xs border border-indigo-200/60 dark:border-indigo-800/50'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] border border-transparent',
                     sidebarCollapsed && 'justify-center px-0'
                   )
                 }
@@ -203,8 +238,16 @@ export function AppShell() {
         </nav>
 
         {!sidebarCollapsed && (
-          <div className="border-t border-[var(--border-hairline)] p-3 text-[11px] text-[var(--text-muted)] leading-snug">
-            {t('status.localOnlyNotice')}
+          <div className="border-t border-[var(--border-hairline)] p-3.5 bg-gradient-to-b from-transparent to-[var(--bg-subtle)]/50">
+            <div className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-2.5 shadow-xs">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>100% Offline Privacy</span>
+              </div>
+              <p className="mt-1 text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                IndexedDB storage · Zero cloud telemetry
+              </p>
+            </div>
           </div>
         )}
       </aside>
@@ -319,20 +362,24 @@ export function AppShell() {
                 <button
                   type="button"
                   aria-label="Change language"
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border-hairline)] px-2.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] cursor-pointer"
+                  className="inline-flex h-9 items-center gap-1.5 justify-center rounded-lg border border-[var(--border-hairline)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] cursor-pointer transition-colors"
                 >
-                  {i18n.language === 'hi' ? 'हिं' : i18n.language === 'mr' ? 'मर' : 'EN'}
+                  <Languages className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>{i18n.language === 'hi' ? 'हिन्दी' : i18n.language === 'mr' ? 'मराठी' : 'English'}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => handleLanguageSelect('en')}>
-                  English (EN)
+                <DropdownMenuItem onSelect={() => handleLanguageSelect('en')} className="flex items-center justify-between">
+                  <span className="font-medium">English</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-3">EN</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => handleLanguageSelect('hi')}>
-                  हिन्दी (Hindi)
+                <DropdownMenuItem onSelect={() => handleLanguageSelect('hi')} className="flex items-center justify-between">
+                  <span className="font-medium">हिन्दी (Hindi)</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-3">HI</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => handleLanguageSelect('mr')}>
-                  मराठी (Marathi)
+                <DropdownMenuItem onSelect={() => handleLanguageSelect('mr')} className="flex items-center justify-between">
+                  <span className="font-medium">मराठी (Marathi)</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-3">MR</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

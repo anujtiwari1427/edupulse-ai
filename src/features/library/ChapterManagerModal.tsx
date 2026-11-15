@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { GitMerge, Scissors } from 'lucide-react';
+import { GitMerge, Scissors, Sparkles } from 'lucide-react';
 import { Button, Input, Modal } from '@/src/components/ui';
 import {
   mergeChapters,
@@ -8,7 +8,9 @@ import {
   splitChapterAtPage,
   updateChapterRange,
 } from '@/src/features/ingestion/chapter-detector';
+import { applyAIChaptersToBook } from '@/src/features/ingestion/ai-chapter-service';
 import { repository } from '@/src/features/storage/repository';
+import { getErrorMessage } from '@/src/lib/errors';
 import type { BookRecord, ChapterRecord } from '@/src/lib/zod-schemas';
 import { useUIStore } from '@/src/app/store';
 
@@ -22,11 +24,34 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
   const addToast = useUIStore((s) => s.addToast);
   const [chapters, setChapters] = React.useState<ChapterRecord[]>([]);
   const [saving, setSaving] = React.useState(false);
+  const [aiScanning, setAiScanning] = React.useState(false);
 
   React.useEffect(() => {
     if (!open || !book) return;
     void repository.libraryRepo.listChapters(book.id).then(setChapters);
   }, [open, book]);
+
+  const handleAiDetectChapters = async () => {
+    if (!book) return;
+    setAiScanning(true);
+    try {
+      const detected = await applyAIChaptersToBook(book.id);
+      setChapters(detected);
+      addToast({
+        title: 'AI Chapter Understanding complete',
+        description: `Gemini detected ${detected.length} chapters and sub-topics from the document.`,
+        variant: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'AI Chapter Detection failed',
+        description: getErrorMessage(err),
+        variant: 'danger',
+      });
+    } finally {
+      setAiScanning(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!book) return;
@@ -68,11 +93,34 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
         </>
       }
     >
-      {chapters.length === 0 ? (
-        <p className="text-sm text-[var(--text-secondary)]">No chapters found for this book.</p>
-      ) : (
-        <div className="space-y-3">
-          {chapters.map((ch, idx) => {
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-indigo-200/60 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-950/20">
+          <div>
+            <div className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+              AI Syllabus &amp; Chapter Understanding
+            </div>
+            <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80 mt-0.5">
+              Analyze document TOC, syllabus pages, and section markers with Gemini 3.5 Flash.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            loading={aiScanning}
+            onClick={() => void handleAiDetectChapters()}
+            leftIcon={<Sparkles className="h-3.5 w-3.5 text-indigo-500" />}
+            className="shrink-0 bg-white dark:bg-zinc-900"
+          >
+            AI Chapter Scan
+          </Button>
+        </div>
+
+        {chapters.length === 0 ? (
+          <p className="text-sm text-[var(--text-secondary)]">No chapters found for this book.</p>
+        ) : (
+          <div className="space-y-3">
+            {chapters.map((ch, idx) => {
             const canSplit = ch.endPage > ch.startPage;
             const midPage = Math.floor((ch.startPage + ch.endPage) / 2) + 1;
             return (
@@ -157,6 +205,7 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
           })}
         </div>
       )}
+      </div>
     </Modal>
   );
 }

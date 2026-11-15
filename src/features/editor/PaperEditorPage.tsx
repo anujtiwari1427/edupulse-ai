@@ -1018,16 +1018,16 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
           }`}
         >
           {/* Preview Controls */}
-          <div className="no-print flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-3.5 py-2.5">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)]">
+          <div className="no-print flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-2 shadow-xs">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
               {(['A', 'B', 'C'] as const).map((code) => (
                 <button
                   key={code}
                   type="button"
                   onClick={() => setActiveSet(code)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`px-3.5 py-1 text-xs font-bold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                     activeSet === code
-                      ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xs'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -1036,13 +1036,13 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
               ))}
             </div>
 
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)]">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
               <button
                 type="button"
                 onClick={() => setPreviewMode('paper')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   previewMode === 'paper'
-                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs font-bold'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -1051,9 +1051,9 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
               <button
                 type="button"
                 onClick={() => setPreviewMode('answer_key')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   previewMode === 'answer_key'
-                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs font-bold'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -1063,7 +1063,7 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
 
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onClick={() => {
                 applyEdit((cur) => reshufflePaperSets(cur));
                 addToast({ title: 'Reshuffled Sets B & C', variant: 'success' });
@@ -1075,7 +1075,7 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
           </div>
 
           {/* Printable A4 Sheet */}
-          <div className="print-sheet rounded-xl border border-[var(--border-hairline)] bg-white text-neutral-900 p-6 sm:p-8 space-y-5 shadow-sm">
+          <div className="print-sheet rounded-2xl border border-neutral-300 dark:border-neutral-600 bg-white text-neutral-900 p-6 sm:p-9 space-y-6 shadow-xl ring-1 ring-black/5 transition-all">
             <div className="border-b-2 border-neutral-800 pb-3 text-center space-y-1">
               <div className="text-base font-bold uppercase tracking-wide">
                 {paper.blueprintSnapshot.header.schoolName || 'QUESTION PAPER'}
