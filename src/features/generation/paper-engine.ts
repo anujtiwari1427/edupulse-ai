@@ -48,7 +48,8 @@ export interface TokenEstimate {
   estimatedCostUsd: number;
 }
 
-export function extractJsonFromAIResponse(raw: string): unknown {
+export function extractJsonFromAIResponse<T = unknown>(raw?: string | null): T | null {
+  if (!raw || typeof raw !== 'string') return null;
   const cleaned = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
@@ -56,19 +57,27 @@ export function extractJsonFromAIResponse(raw: string): unknown {
     .trim();
 
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(cleaned) as T;
   } catch {
     const startIdx = cleaned.indexOf('{');
     const endIdx = cleaned.lastIndexOf('}');
     if (startIdx >= 0 && endIdx > startIdx) {
-      return JSON.parse(cleaned.slice(startIdx, endIdx + 1));
+      try {
+        return JSON.parse(cleaned.slice(startIdx, endIdx + 1)) as T;
+      } catch {
+        // fall through
+      }
     }
     const arrStart = cleaned.indexOf('[');
     const arrEnd = cleaned.lastIndexOf(']');
     if (arrStart >= 0 && arrEnd > arrStart) {
-      return { questions: JSON.parse(cleaned.slice(arrStart, arrEnd + 1)) };
+      try {
+        return { questions: JSON.parse(cleaned.slice(arrStart, arrEnd + 1)) } as T;
+      } catch {
+        // fall through
+      }
     }
-    throw new Error('Could not parse JSON object from AI output.');
+    return null;
   }
 }
 

@@ -102,4 +102,70 @@ describe('Document Chunker & Chapter Manager', () => {
     expect(merged).toHaveLength(2);
     expect(merged[0]?.endPage).toBe(10);
   });
+
+  it('rejects bogus DTP printer bookmarks (PRILIM, TEXT, COVER NO. 3) and falls back to TOC', () => {
+    const bogusOutline = [
+      { title: 'COVER NO. 1', pageNumber: 1 },
+      { title: 'PRILIM', pageNumber: 3 },
+      { title: 'TEXT', pageNumber: 11 },
+      { title: 'COVER NO. 3', pageNumber: 147 },
+    ];
+
+    const pages = [
+      { pageNumber: 1, text: 'Cover Page' },
+      { pageNumber: 2, text: 'National Anthem & Preface' },
+      {
+        pageNumber: 3,
+        text: `INDEX
+No. Chapter Name Page No.
+1. Sets ......................... 1
+2. Real Numbers ................. 19
+3. Polynomials .................. 36
+4. Ratio and Proportion ......... 58`,
+      },
+      ...Array.from({ length: 7 }, (_, i) => ({ pageNumber: 4 + i, text: `Front matter page ${4 + i}` })),
+      { pageNumber: 11, text: '1. Sets\nBasic concepts of sets and Venn diagrams' },
+      { pageNumber: 29, text: '2. Real Numbers\nIrrational numbers and surds' },
+      { pageNumber: 46, text: '3. Polynomials\nDegree of polynomial and factorization' },
+      { pageNumber: 68, text: '4. Ratio and Proportion\nDirect and inverse proportion' },
+      { pageNumber: 147, text: 'Back Cover' },
+    ];
+
+    const detected = detectChaptersFromPages(pages, bogusOutline);
+    expect(detected.length).toBeGreaterThanOrEqual(4);
+    // Must NOT contain PRILIM, TEXT, or COVER
+    const titles = detected.map((d) => d.title.toUpperCase());
+    expect(titles).not.toContain('PRILIM');
+    expect(titles).not.toContain('TEXT');
+    expect(titles).not.toContain('COVER NO. 3');
+
+    expect(detected[0]?.title).toBe('Sets');
+    expect(detected[0]?.startPage).toBe(11);
+    expect(detected[1]?.title).toBe('Real Numbers');
+    expect(detected[1]?.startPage).toBe(29);
+  });
+
+  it('detects Marathi Balbharati TOC with अनुक्रमणिका', () => {
+    const pages = [
+      { pageNumber: 1, text: 'मुखपृष्ठ' },
+      {
+        pageNumber: 2,
+        text: `अनुक्रमणिका
+क्र. पाठाचे नाव पृष्ठ क्र.
+१. संच ...................... १
+२. वास्तव संख्या .............. १९
+३. बहुपदी ................... ३६`,
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({ pageNumber: 3 + i, text: `प्रस्तावना पान ${3 + i}` })),
+      { pageNumber: 11, text: '१. संच\nसंच संकल्पना व वेन आकृत्या' },
+      { pageNumber: 29, text: '२. वास्तव संख्या\nअपरिमेय संख्या' },
+      { pageNumber: 46, text: '३. बहुपदी\nबहुपदींची कोटी' },
+    ];
+
+    const detected = detectChaptersFromPages(pages);
+    expect(detected).toHaveLength(3);
+    expect(detected[0]?.title).toBe('संच');
+    expect(detected[0]?.startPage).toBe(11);
+    expect(detected[1]?.title).toBe('वास्तव संख्या');
+  });
 });

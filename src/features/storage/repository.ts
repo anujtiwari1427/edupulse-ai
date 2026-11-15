@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { db, type EduPulseDB, type StoredFileRecord } from './db';
 import {
   BackupMetaSchema,
@@ -97,27 +98,15 @@ export function createRepository(database: EduPulseDB = db) {
         const parsed = SettingsSchema.safeParse(existing);
         if (parsed.success) {
           const currentKey = parsed.data.aiApiKey?.trim();
-          const shouldUpdateKey = !currentKey && Boolean(DEFAULT_AI_KEY);
-          const shouldUpdateProvider = parsed.data.aiProvider === 'none';
-          const shouldUpdateModel = !parsed.data.aiModel || parsed.data.aiModel === 'gemini-4-hydrogen';
-
-          if (shouldUpdateKey || shouldUpdateProvider || shouldUpdateModel) {
-            const updated: SettingsRecord = {
-              ...parsed.data,
-              aiProvider: shouldUpdateProvider ? 'gemini' : parsed.data.aiProvider,
-              aiModel: shouldUpdateModel ? DEFAULT_AI_MODEL : parsed.data.aiModel,
-              aiApiKey: currentKey || DEFAULT_AI_KEY,
-              updatedAt: Date.now(),
-            };
-            await database.settings.put(updated);
-            return updated;
-          }
-          return parsed.data;
+          const hasCustomModel = parsed.data.aiModel && parsed.data.aiModel !== 'gemini-4-hydrogen';
+          return {
+            ...parsed.data,
+            aiModel: hasCustomModel ? parsed.data.aiModel : DEFAULT_AI_MODEL,
+            aiApiKey: currentKey || DEFAULT_AI_KEY,
+          };
         }
       }
-      const initial: SettingsRecord = { ...DEFAULT_SETTINGS, updatedAt: Date.now() };
-      await database.settings.put(initial);
-      return initial;
+      return { ...DEFAULT_SETTINGS, updatedAt: Date.now() };
     },
 
     async update(patch: Partial<Omit<SettingsRecord, 'id'>>): Promise<SettingsRecord> {

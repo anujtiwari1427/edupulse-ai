@@ -1,7 +1,11 @@
 import { repository } from '@/src/features/storage/repository';
 import { callAIProvider, isAIConfigured } from '@/src/features/generation/ai-providers';
 import { extractJsonFromAIResponse } from '@/src/features/generation/paper-engine';
-import { reassignChunksToChapters } from './chapter-detector';
+import {
+  BOGUS_OUTLINE_REGEX,
+  detectChaptersFromPages,
+  reassignChunksToChapters,
+} from './chapter-detector';
 import {
   ChapterSchema,
   type BoardType,
@@ -35,63 +39,88 @@ interface RawAIResponse {
 }
 
 /**
- * Extracts and synthesizes textbook front matter and page markers into a concise context prompt
+ * Extracts and synthesizes textbook front matter, isolated TOC page, and page markers into a concise prompt.
  */
 function buildSampleTextForAI(pages: ExtractedPage[], outline: OutlineItem[] = []): string {
   const totalPages = Math.max(1, pages.length);
   const sampleParts: string[] = [];
 
-  // 1. PDF Outline / Bookmarks if available
-  if (outline.length > 0) {
-    const outlineSummary = outline
-      .slice(0, 40)
+  // 1. PDF Outline / Bookmarks (strictly filtering bogus DTP labels)
+  const cleanOutline = outline.filter(
+    (item) =>
+      item.title.trim().length > 0 &&
+      !BOGUS_OUTLINE_REGEX.test(item.title) &&
+      item.pageNumber >= 1 &&
+      item.pageNumber <= totalPages
+  );
+
+  if (cleanOutline.length > 0) {
+    const outlineSummary = cleanOutline
+      .slice(0, 30)
       .map((item) => `- "${item.title}" (Page ${item.pageNumber})`)
       .join('\n');
     sampleParts.push(`--- EMBEDDED DOCUMENT OUTLINE ---\n${outlineSummary}\n`);
   }
 
-  // 2. Front matter pages (first 18 pages contain TOC, Syllabus, Course Content)
-  const frontPages = pages
-    .filter((p) => p.pageNumber <= 18)
-    .sort((a, b) => a.pageNumber - b.pageNumber);
+  // 2. Identify and highlight Table of Contents / Index page
+  const sortedPages = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
+  const frontPages = sortedPages.filter((p) => p.pageNumber <= 15);
+  const tocHeaders = /(?:(?:table\s+of\s+)?contents|index|अनुक्रमणिका|विषय[\s\-]*सूची)/i;
 
+  let tocFound = false;
   for (const page of frontPages) {
-    const trimmed = page.text.trim();
-    if (trimmed.length > 0) {
-      sampleParts.push(`--- PAGE ${page.pageNumber} ---\n${trimmed.slice(0, 2500)}`);
+    if (tocHeaders.test(page.text.slice(0, 400))) {
+      sampleParts.push(
+        `--- TABLE OF CONTENTS / INDEX (PDF Physical Page ${page.pageNumber}) ---\n${page.text.trim().slice(0, 3000)}`
+      );
+      tocFound = true;
+      break;
     }
   }
 
-  // 3. Sample headings from subsequent pages to confirm chapter locations
-  const remainingPages = pages
-    .filter((p) => p.pageNumber > 18)
-    .sort((a, b) => a.pageNumber - b.pageNumber);
-
-  const headingLines: string[] = [];
-  for (const page of remainingPages) {
-    const lines = page.text
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length >= 4 && l.length <= 100);
-
-    for (const line of lines.slice(0, 4)) {
-      if (
-        /^(?:chapter|unit|lesson|module|अध्याय|पाठ|प्रकरण)\s+\d+/i.test(line) ||
-        /^\d+\s*[.\-:]\s*[A-Z]/.test(line)
-      ) {
-        headingLines.push(`Page ${page.pageNumber}: ${line}`);
-        break;
+  // If no explicit TOC page found, include first 8 pages
+  if (!tocFound) {
+    for (const page of frontPages.slice(0, 8)) {
+      const trimmed = page.text.trim();
+      if (trimmed.length > 0) {
+        sampleParts.push(`--- PDF PAGE ${page.pageNumber} ---\n${trimmed.slice(0, 1500)}`);
       }
     }
   }
 
+  // 3. Sample headings detected across body pages
+  const headingLines: string[] = [];
+  const candidatePatterns = [
+    /^(?:chapter|unit|lesson|module)\s+(\d+|[ivxlcdm]+)\s*[:.\-–]?\s*(.*)$/i,
+    /^(?:अध्याय|पाठ|इकाई|प्रकरण)\s*([०-९\d]+)\s*[:.\-–]?\s*(.*)$/,
+    /^(\d{1,2})\s*[\.:\-–]\s*([A-Za-z\u0900-\u097F][\w\s,'\-\(\)\/\&]{2,80})$/,
+    /^([०-९]{1,2})\s*[\.:\-–]\s*([\u0900-\u097F][\w\s,'\-\(\)\/\&]{2,80})$/,
+  ];
+
+  for (const page of sortedPages) {
+    if (page.pageNumber <= 5) continue;
+    const lines = page.text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length >= 3 && l.length <= 100);
+
+    for (const line of lines.slice(0, 6)) {
+      if (BOGUS_OUTLINE_REGEX.test(line)) continue;
+      if (candidatePatterns.some((re) => re.test(line))) {
+        headingLines.push(`Physical Page ${page.pageNumber}: ${line}`);
+        break;
+      }
+    }
+    if (headingLines.length >= 25) break;
+  }
+
   if (headingLines.length > 0) {
     sampleParts.push(
-      `--- SAMPLE HEADINGS DETECTED ACROSS PAGES ---\n${headingLines.slice(0, 30).join('\n')}`
+      `--- CANDIDATE CHAPTER MARKERS IN BODY PAGES ---\n${headingLines.join('\n')}`
     );
   }
 
-  return sampleParts.join('\n\n').slice(0, 25000);
+  return sampleParts.join('\n\n').slice(0, 16000);
 }
 
 /**
@@ -119,29 +148,32 @@ export async function detectChaptersWithAI(
   }
 
   const systemPrompt = `You are an expert curriculum and textbook analysis AI for Indian education boards (${metadata.board}, Class ${metadata.classLevel} ${metadata.subject}).
-Your task is to analyze the textbook's Table of Contents (TOC), front matter, and page headings to detect all chapters.
+Your task is to analyze the textbook's Table of Contents (TOC) and chapter headings to detect all academic curriculum chapters.
 
-Rules:
-1. Identify all genuine curriculum chapters/units in sequential order (1, 2, 3...).
-2. Provide clean, professional chapter titles (e.g. "Chemical Reactions and Equations", "Acids, Bases and Salts"). Remove unnecessary prefix garbage like "Unit-I:" unless essential.
-3. Determine accurate startPage and endPage for each chapter. startPage must be >= 1 and endPage must be <= ${totalPages}.
-4. Ensure chapters are sequential and non-overlapping.
-5. Provide 2-5 essential sub-topics for each chapter.
+CRITICAL INSTRUCTIONS:
+1. Extract ONLY genuine curriculum chapters/units in sequential order (1, 2, 3...).
+2. EXCLUDE all printing, DTP, and scanner artifact labels: "PRILIM", "PRELIM", "TEXT", "BODY", "COVER NO. 1", "COVER NO. 2", "COVER NO. 3", "COVER NO. 4", "INSIDE COVER". These are NEVER chapters.
+3. Clean chapter titles (e.g. "Sets", "Real Numbers", "Polynomials", "रासायनिक अभिक्रिया और समीकरण"). Strip unnecessary noise like "Chapter 1:" from the title if you prefer, or keep it standard.
+4. Determine physical PDF startPage and endPage for each chapter.
+   - Note that printed page 1 in the book usually starts several pages into the physical PDF (e.g. printed page 1 may be physical PDF page 11).
+   - startPage must be >= 1 and endPage must be <= ${totalPages}.
+   - Chapters must be sequential and non-overlapping.
+5. Provide 2-5 key sub-topics for each chapter.
 6. Return only valid JSON according to the schema.`;
 
-  const userPrompt = `Analyze this textbook and return the chapter breakdown.
+  const userPrompt = `Analyze this Indian textbook (${metadata.board} Class ${metadata.classLevel} ${metadata.subject}) and return the structured chapter breakdown.
 
 Document Information:
 - Title: "${metadata.title}"
 - Board: ${metadata.board}
 - Class: ${metadata.classLevel}
 - Subject: ${metadata.subject}
-- Total Document Pages: ${totalPages}
+- Total Physical PDF Pages: ${totalPages}
 
 Document Text Sample (TOC & Page Markers):
 ${sampleText}
 
-Return the complete JSON array of detected chapters.`;
+Return the complete JSON object with the "chapters" array.`;
 
   const responseSchema = {
     type: 'OBJECT',
@@ -153,12 +185,12 @@ Return the complete JSON array of detected chapters.`;
           properties: {
             order: { type: 'INTEGER', description: 'Chapter sequence number starting from 1' },
             title: { type: 'STRING', description: 'Clean chapter title' },
-            startPage: { type: 'INTEGER', description: `Starting page (>= 1)` },
-            endPage: { type: 'INTEGER', description: `Ending page (<= ${totalPages})` },
+            startPage: { type: 'INTEGER', description: `Physical PDF starting page (>= 1)` },
+            endPage: { type: 'INTEGER', description: `Physical PDF ending page (<= ${totalPages})` },
             topics: {
               type: 'ARRAY',
               items: { type: 'STRING' },
-              description: 'Key syllabus topics in this chapter',
+              description: '2-5 key curriculum subtopics in this chapter',
             },
           },
           required: ['order', 'title', 'startPage', 'endPage'],
@@ -168,70 +200,105 @@ Return the complete JSON array of detected chapters.`;
     required: ['chapters'],
   };
 
-  const response = await callAIProvider(settings, {
-    systemPrompt,
-    userPrompt,
-    responseSchema,
-    temperature: 0.2,
-    maxTokens: 4096,
-    timeoutMs: 40_000,
+  try {
+    const result = await callAIProvider(settings, {
+      systemPrompt,
+      userPrompt,
+      responseSchema,
+      temperature: 0.1,
+      timeoutMs: 15_000,
+    });
+
+    const parsed = extractJsonFromAIResponse<RawAIResponse>(result.content);
+    const chapters = parsed?.chapters;
+
+    if (!Array.isArray(chapters) || chapters.length === 0) {
+      // Fallback to local heuristic TOC detector
+      return detectChaptersFromPages(pages, outline);
+    }
+
+    const sanitized = sanitizeAIChapters(chapters, totalPages);
+    return sanitized.length > 0 ? sanitized : detectChaptersFromPages(pages, outline);
+  } catch (err) {
+    console.warn('AI chapter detection failed or timed out, falling back to local detector:', err);
+    return detectChaptersFromPages(pages, outline);
+  }
+}
+
+function sanitizeAIChapters(raw: RawAIChapter[], totalPages: number): DetectedChapter[] {
+  const filtered = raw.filter((item) => {
+    if (!item.title || typeof item.title !== 'string') return false;
+    const clean = item.title.trim();
+    if (clean.length < 2) return false;
+    if (BOGUS_OUTLINE_REGEX.test(clean)) return false;
+    return true;
   });
 
-  const parsed = extractJsonFromAIResponse(response.text) as RawAIResponse;
-  const rawChapters = parsed?.chapters;
+  if (filtered.length === 0) return [];
 
-  if (!Array.isArray(rawChapters) || rawChapters.length === 0) {
-    throw new AppError('AI could not detect structured chapters from this document.', {
-      code: 'AI_CHAPTER_DETECTION_FAILED',
-    });
-  }
+  // Sort by startPage or order
+  filtered.sort((a, b) => {
+    const pA = a.startPage ?? 0;
+    const pB = b.startPage ?? 0;
+    if (pA !== pB) return pA - pB;
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
 
-  // Normalize, validate, and clean chapter boundaries
   const validChapters: DetectedChapter[] = [];
-  const sorted = [...rawChapters].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-  for (let idx = 0; idx < sorted.length; idx++) {
-    const ch = sorted[idx]!;
-    const title = (ch.title || `Chapter ${idx + 1}`).trim().slice(0, 150);
-    const order = idx + 1;
-    let startPage = Math.max(1, Math.min(totalPages, Number(ch.startPage) || 1));
-    let endPage = Math.max(startPage, Math.min(totalPages, Number(ch.endPage) || startPage));
+  for (let i = 0; i < filtered.length; i++) {
+    const item = filtered[i]!;
+    const cleanTitle = item.title!.replace(/\s+/g, ' ').trim().slice(0, 180);
 
-    // Ensure monotonically increasing page boundaries
-    if (idx > 0 && startPage <= validChapters[idx - 1]!.startPage) {
-      startPage = validChapters[idx - 1]!.endPage + 1;
-      if (startPage > totalPages) startPage = totalPages;
+    let start = Math.max(1, Math.min(totalPages, Number(item.startPage) || 1));
+    let end = Math.max(start, Math.min(totalPages, Number(item.endPage) || totalPages));
+
+    if (validChapters.length > 0) {
+      const prev = validChapters[validChapters.length - 1]!;
+      if (start <= prev.endPage) {
+        start = prev.endPage + 1;
+      }
+      if (start > totalPages) {
+        start = totalPages;
+      }
+      if (end < start) {
+        end = start;
+      }
     }
 
-    if (endPage < startPage) {
-      endPage = startPage;
-    }
-
-    const topics = Array.isArray(ch.topics)
-      ? ch.topics.map((t) => String(t).trim()).filter((t) => t.length > 0).slice(0, 8)
+    const topics = Array.isArray(item.topics)
+      ? item.topics
+          .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => t.trim().slice(0, 100))
       : [];
 
     validChapters.push({
-      order,
-      title,
-      startPage,
-      endPage,
+      order: i + 1,
+      title: cleanTitle,
+      startPage: start,
+      endPage: end,
       topics,
     });
   }
 
-  // Fix end pages: ensure each chapter spans until the next chapter starts, and last reaches totalPages
+  // Ensure first starts at 1 and last reaches totalPages
+  if (validChapters.length > 0) {
+    validChapters[0]!.startPage = 1;
+    validChapters[validChapters.length - 1]!.endPage = totalPages;
+  }
+
+  // Adjust contiguous page ranges
   for (let i = 0; i < validChapters.length; i++) {
     const cur = validChapters[i]!;
     const next = validChapters[i + 1];
     if (next) {
-      if (cur.endPage < cur.startPage || cur.endPage >= next.startPage) {
+      if (cur.endPage >= next.startPage) {
         cur.endPage = Math.max(cur.startPage, next.startPage - 1);
+      } else if (cur.endPage < next.startPage - 1) {
+        cur.endPage = next.startPage - 1;
       }
     } else {
-      if (cur.endPage < totalPages) {
-        cur.endPage = totalPages;
-      }
+      cur.endPage = totalPages;
     }
   }
 
@@ -248,13 +315,6 @@ export async function applyAIChaptersToBook(bookId: string): Promise<ChapterReco
     throw new AppError(`Textbook with ID "${bookId}" was not found.`, { code: 'NOT_FOUND' });
   }
 
-  const storedFile = await repository.libraryRepo.getFile(book.fileId);
-  if (!storedFile) {
-    throw new AppError('Source document file binary is missing from local storage.', {
-      code: 'MISSING_FILE',
-    });
-  }
-
   // Synthesize extracted pages from existing chunks
   const chunks = await repository.libraryRepo.listAllChunks(bookId);
   const pageMap = new Map<number, string>();
@@ -264,7 +324,7 @@ export async function applyAIChaptersToBook(bookId: string): Promise<ChapterReco
   }
 
   const pages: ExtractedPage[] = [];
-  const maxPage = Math.max(book.pageCount, ...Array.from(pageMap.keys()));
+  const maxPage = Math.max(book.pageCount, ...Array.from(pageMap.keys()), 1);
 
   for (let p = 1; p <= maxPage; p++) {
     pages.push({

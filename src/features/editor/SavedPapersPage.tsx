@@ -330,6 +330,16 @@ export function SavedPapersPage() {
                       <History className="h-4 w-4" />
                     </Button>
 
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Duplicate ${paper.title}`}
+                      onClick={() => void handleDuplicate(paper.id)}
+                      title="Duplicate paper"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button

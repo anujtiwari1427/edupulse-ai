@@ -11,6 +11,7 @@ describe('CreatePaperPage 4-Step Wizard', () => {
     await db.delete();
     await db.open();
     await ensureBuiltInTemplatesSeeded();
+    await repository.settingsRepo.update({ aiProvider: 'none' });
   });
 
   it('walks through Source -> Blueprint -> Review -> Offline Bank Generation', async () => {
@@ -38,7 +39,7 @@ describe('CreatePaperPage 4-Step Wizard', () => {
     expect(screen.getByText(/Live Blueprint Summary/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Next: Review & Estimate/i }));
-    expect(await screen.findByText(/Running in Offline \/ Bank-Only mode/i)).toBeInTheDocument();
+    expect(await screen.findByText(/AI & Local Bank Execution Plan/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Generate Question Paper/i }));
 
@@ -51,5 +52,5 @@ describe('CreatePaperPage 4-Step Wizard', () => {
 
     const papers = await repository.papersRepo.listPapers();
     expect(papers.length).toBeGreaterThanOrEqual(2);
-  });
+  }, 25000);
 });

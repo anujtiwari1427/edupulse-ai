@@ -343,17 +343,26 @@ async function executeCheckpointPipeline(
 
     // Stage 2: Optional OCR on scanned PDF pages (with non-blocking safety timeout)
     if (checkpoint.stage === 'ocr') {
-      const scannedCount = checkpoint.pages.filter((p) => p.needsOcr && !p.ocrApplied).length;
-      if (scannedCount > 0) {
+      const targetPages = checkpoint.pages.filter((p) => p.needsOcr && !p.ocrApplied);
+      const totalDigitalPages = checkpoint.pages.filter(
+        (p) => (p.text?.trim()?.length ?? 0) > 40
+      ).length;
+      const isMostlyDigital = totalDigitalPages >= Math.max(1, checkpoint.pages.length * 0.7);
+
+      // Only perform OCR if the document is genuinely scanned/image-heavy (>30% unscanned pages)
+      if (targetPages.length > 0 && !isMostlyDigital) {
         try {
           await repository.jobsRepo.updateJobProgress(jobId, {
             type: 'ocr',
-            title: `Running OCR on ${scannedCount} scanned page(s)…`,
+            title: `Running OCR on ${targetPages.length} scanned page(s)…`,
+            processedItems: 0,
+            totalItems: targetPages.length,
+            progress: 60,
           });
 
-          // Maximum 20 seconds total OCR safety budget
+          // Maximum 12 seconds total OCR safety budget
           const ocrTimeout = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('OCR overall timeout exceeded')), 20000)
+            setTimeout(() => reject(new Error('OCR overall timeout exceeded')), 12000)
           );
 
           const updatedPages = await Promise.race([
@@ -361,7 +370,7 @@ async function executeCheckpointPipeline(
               signal,
               onProgress: (evt) => {
                 void repository.jobsRepo.updateJobProgress(jobId, {
-                  progress: Math.round(60 + (evt.current / evt.total) * 25),
+                  progress: Math.min(84, Math.round(60 + (evt.current / Math.max(1, evt.total)) * 24)),
                   processedItems: evt.current,
                   totalItems: evt.total,
                 });
@@ -382,6 +391,11 @@ async function executeCheckpointPipeline(
           for (const p of checkpoint.pages) {
             p.needsOcr = false;
           }
+        }
+      } else {
+        // Document has searchable digital text, no need to stall on cover/blank pages
+        for (const p of checkpoint.pages) {
+          p.needsOcr = false;
         }
       }
 
@@ -446,11 +460,13 @@ async function executeCheckpointPipeline(
             title: `Analyzing chapters & syllabus with Gemini AI…`,
             progress: 90,
           });
+          const currentBook = await repository.libraryRepo.getBook(checkpoint.bookId);
+          const bookTitle = currentBook?.title || checkpoint.fileName;
           const aiDetected = await detectChaptersWithAI(
             checkpoint.pages,
             {
               bookId: checkpoint.bookId,
-              title: checkpoint.fileName,
+              title: bookTitle,
               board: checkpoint.board,
               classLevel: checkpoint.classLevel,
               subject: checkpoint.subject,

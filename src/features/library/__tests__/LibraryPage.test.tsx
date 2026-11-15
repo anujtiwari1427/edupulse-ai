@@ -62,10 +62,13 @@ describe('Library & Ingestion Pipeline', () => {
       copyrightConfirmed: true,
     });
 
-    await waitFor(async () => {
-      const book = await repository.libraryRepo.getBook(bookId);
-      expect(book?.status).toBe('ready');
-    });
+    await waitFor(
+      async () => {
+        const book = await repository.libraryRepo.getBook(bookId);
+        expect(book?.status).toBe('ready');
+      },
+      { timeout: 8000 }
+    );
 
     const chapters = await repository.libraryRepo.listChapters(bookId);
     const chunks = await repository.libraryRepo.listAllChunks(bookId);

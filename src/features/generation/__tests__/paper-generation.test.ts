@@ -390,7 +390,7 @@ describe('Paper Selection, AI Repair, Sets A/B/C & Generation Job', () => {
     const genConfig = (requestBodies[0] as { generationConfig?: Record<string, unknown> })
       .generationConfig;
     expect(genConfig?.temperature).toBeUndefined();
-    expect(genConfig?.maxOutputTokens).toBeUndefined();
+    expect(genConfig?.maxOutputTokens).toBe(8192);
     expect(genConfig?.thinkingConfig).toEqual({ thinkingLevel: 'LOW' });
     expect(genConfig?.responseSchema).toBeDefined();
   });

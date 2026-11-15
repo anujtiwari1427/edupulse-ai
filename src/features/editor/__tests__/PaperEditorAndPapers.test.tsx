@@ -157,7 +157,8 @@ describe('PaperEditorPage, SavedPapersPage & Accessibility', () => {
 
     await screen.findByText('Class 10 Term 1 Science');
 
-    await user.click(screen.getByRole('button', { name: /Duplicate Class 10 Term 1 Science/i }));
+    const duplicateBtn = await screen.findByTitle('Duplicate paper');
+    await user.click(duplicateBtn);
     await screen.findByText('Class 10 Term 1 Science (Copy)');
 
     await user.type(screen.getByLabelText('Search saved papers'), 'Copy');

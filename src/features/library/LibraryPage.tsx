@@ -22,6 +22,7 @@ import {
   cancelIngestionJob,
   resumeIngestionJob,
   skipOcrAndFinishJob,
+  startIngestionJob,
 } from '@/src/features/ingestion/ingestion-service';
 import {
   LocalBM25Index,
@@ -537,12 +538,54 @@ export function LibraryPage() {
                           });
                           if (matchedJob) {
                             await skipOcrAndFinishJob(matchedJob.id);
-                          } else {
-                            await repository.libraryRepo.saveBook({
-                              ...book,
-                              status: 'ready',
-                              updatedAt: Date.now(),
+                            addToast({
+                              title: 'Finishing indexing',
+                              description: `Skipped OCR and indexing ${book.title} directly.`,
+                              variant: 'success',
                             });
+                          } else {
+                            const existingChunks = await repository.libraryRepo.listAllChunks(book.id);
+                            if (existingChunks.length > 0) {
+                              await repository.libraryRepo.saveBook({
+                                ...book,
+                                status: 'ready',
+                                chunkCount: existingChunks.length,
+                                updatedAt: Date.now(),
+                              });
+                              addToast({
+                                title: 'Book Ready',
+                                description: `Activated ${book.title} with ${existingChunks.length} indexed chunks.`,
+                                variant: 'success',
+                              });
+                            } else {
+                              const storedFile = await repository.libraryRepo.getFile(book.fileId);
+                              if (storedFile?.blob) {
+                                await repository.libraryRepo.deleteBook(book.id);
+                                await startIngestionJob({
+                                  file: storedFile.blob as File,
+                                  title: book.title,
+                                  board: book.board,
+                                  classLevel: book.classLevel,
+                                  subject: book.subject,
+                                  language: book.language,
+                                  sourceType: book.sourceType,
+                                  ocrEnabled: false,
+                                  aiChapterDetection: true,
+                                  copyrightConfirmed: true,
+                                });
+                                addToast({
+                                  title: 'Fast indexing restarted',
+                                  description: `Re-indexing ${book.title} with fast digital text extraction.`,
+                                  variant: 'default',
+                                });
+                              } else {
+                                await repository.libraryRepo.saveBook({
+                                  ...book,
+                                  status: 'ready',
+                                  updatedAt: Date.now(),
+                                });
+                              }
+                            }
                           }
                         }}
                         leftIcon={<Zap className="h-3.5 w-3.5 text-amber-500" />}

@@ -58,7 +58,7 @@ describe('Zod Boundary Schemas & Error Log', () => {
       updatedAt: Date.now(),
     });
     expect(parsed.language).toBe('en');
-    expect(parsed.aiProvider).toBe('none');
+    expect(parsed.aiProvider).toBe('gemini');
     expect(parsed.backupReminderDays).toBe(7);
   });
 
