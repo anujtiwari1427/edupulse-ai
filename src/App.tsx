@@ -5,35 +5,55 @@ import i18n from '@/src/lib/i18n';
 import { ErrorBoundary, TooltipProvider } from '@/src/components/ui';
 import { LandingPage } from '@/src/features/landing/LandingPage';
 
-const AppShell = React.lazy(() =>
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return React.lazy(async () => {
+    const pageHasAlreadyBeenReloaded = sessionStorage.getItem('chunk_reload');
+    try {
+      const module = await factory();
+      sessionStorage.removeItem('chunk_reload');
+      return module;
+    } catch (error) {
+      if (!pageHasAlreadyBeenReloaded) {
+        sessionStorage.setItem('chunk_reload', 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+const AppShell = lazyWithRetry(() =>
   import('@/src/app/AppShell').then((m) => ({ default: m.AppShell }))
 );
-const DashboardPage = React.lazy(() =>
+const DashboardPage = lazyWithRetry(() =>
   import('@/src/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))
 );
-const SettingsPage = React.lazy(() =>
+const SettingsPage = lazyWithRetry(() =>
   import('@/src/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))
 );
-const LibraryPage = React.lazy(() =>
+const LibraryPage = lazyWithRetry(() =>
   import('@/src/features/library/LibraryPage').then((m) => ({ default: m.LibraryPage }))
 );
-const CreatePaperPage = React.lazy(() =>
+const CreatePaperPage = lazyWithRetry(() =>
   import('@/src/features/generation/CreatePaperPage').then((m) => ({
     default: m.CreatePaperPage,
   }))
 );
-const SavedPapersPage = React.lazy(() =>
+const SavedPapersPage = lazyWithRetry(() =>
   import('@/src/features/editor/SavedPapersPage').then((m) => ({ default: m.SavedPapersPage }))
 );
-const TemplatesPage = React.lazy(() =>
+const TemplatesPage = lazyWithRetry(() =>
   import('@/src/features/blueprint/TemplatesPage').then((m) => ({
     default: m.TemplatesPage,
   }))
 );
-const PaperEditorPreviewPage = React.lazy(() =>
+const PaperEditorPreviewPage = lazyWithRetry(() =>
   import('@/src/features/editor/PaperEditorPage').then((m) => ({ default: m.PaperEditorPage }))
 );
-const NotFoundPage = React.lazy(() =>
+const NotFoundPage = lazyWithRetry(() =>
   import('@/src/app/WorkspaceViews').then((m) => ({ default: m.NotFoundPage }))
 );
 

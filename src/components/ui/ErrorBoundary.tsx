@@ -41,8 +41,27 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     URL.revokeObjectURL(url);
   };
 
+  isChunkLoadError(): boolean {
+    const msg = this.state.errorMessage;
+    return (
+      /failed to fetch dynamically imported module/i.test(msg) ||
+      /loading chunk/i.test(msg) ||
+      /dynamically imported module/i.test(msg) ||
+      /importing a module script failed/i.test(msg)
+    );
+  }
+
+  handleRetry = () => {
+    if (this.isChunkLoadError()) {
+      window.location.reload();
+      return;
+    }
+    this.setState({ hasError: false, errorMessage: '' });
+  };
+
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.isChunkLoadError();
       return (
         <div className="mx-auto my-8 max-w-lg rounded-xl border border-[var(--danger-border)] bg-[var(--bg-surface)] p-6">
           <div className="flex items-start gap-3">
@@ -51,10 +70,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </div>
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                {this.props.fallbackTitle ?? 'Something went wrong in this view'}
+                {isChunkError
+                  ? 'A new version of EduPulse was deployed'
+                  : (this.props.fallbackTitle ?? 'Something went wrong in this view')}
               </h2>
               <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                Your saved textbooks, question banks, and papers in local IndexedDB remain safe.
+                {isChunkError
+                  ? 'Your browser was viewing an earlier cached build. Reloading will sync the latest version and preserve all your local data.'
+                  : 'Your saved textbooks, question banks, and papers in local IndexedDB remain safe.'}
               </p>
               <p className="mt-2 rounded-lg bg-[var(--bg-subtle)] p-2.5 font-mono text-xs text-[var(--danger-text)] break-words">
                 {this.state.errorMessage}
@@ -62,10 +85,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
-                  onClick={() => this.setState({ hasError: false, errorMessage: '' })}
+                  onClick={this.handleRetry}
                   leftIcon={<RotateCcw className="h-3.5 w-3.5" />}
                 >
-                  Retry View
+                  {isChunkError ? 'Reload to Update' : 'Retry View'}
                 </Button>
                 <Button
                   size="sm"
