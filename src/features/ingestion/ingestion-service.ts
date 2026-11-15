@@ -67,12 +67,47 @@ function createWorkerClient(): { api: Comlink.Remote<IngestionWorkerApi>; termin
   };
 }
 
-export function cancelIngestionJob(jobId: string): void {
+export async function cancelIngestionJob(jobId: string): Promise<void> {
   const controller = activeControllers.get(jobId);
   if (controller) {
     controller.abort();
     activeControllers.delete(jobId);
   }
+  // Ensure the job in IndexedDB is marked as paused so it can be resumed or dismissed
+  await repository.jobsRepo.updateJobProgress(jobId, {
+    status: 'paused',
+    errorMessage: 'Paused — click "Skip OCR & Finish" to complete instantly, or Resume.',
+  });
+}
+
+export async function skipOcrAndFinishJob(jobId: string): Promise<void> {
+  const jobs = await repository.jobsRepo.listJobs();
+  const job = jobs.find((j) => j.id === jobId);
+  if (!job || !job.checkpoint) {
+    throw new AppError('No checkpoint found for this task.', { code: 'NO_CHECKPOINT' });
+  }
+
+  // Cancel any running task
+  const controller = activeControllers.get(jobId);
+  if (controller) {
+    controller.abort();
+    activeControllers.delete(jobId);
+  }
+
+  const checkpoint = JSON.parse(job.checkpoint) as IngestCheckpoint;
+  // Advance past OCR directly into chapter detection & chunking
+  checkpoint.stage = checkpoint.sourceType === 'question_bank' ? 'parsing_bank' : 'chunking';
+  for (const page of checkpoint.pages) {
+    page.needsOcr = false;
+  }
+
+  await repository.jobsRepo.updateJobProgress(jobId, {
+    status: 'running',
+    errorMessage: undefined,
+    checkpoint: JSON.stringify(checkpoint),
+  });
+
+  void executeCheckpointPipeline(jobId, checkpoint);
 }
 
 export async function startIngestionJob(input: StartIngestionInput): Promise<{
@@ -173,9 +208,17 @@ export async function resumeIngestionJob(jobId: string): Promise<void> {
     throw new AppError('No resumable checkpoint found for this task.', { code: 'NO_CHECKPOINT' });
   }
   const checkpoint = JSON.parse(job.checkpoint) as IngestCheckpoint;
+  // If resumed while at OCR stage, advance to chapter detection to prevent re-hanging
+  if (checkpoint.stage === 'ocr') {
+    checkpoint.stage = checkpoint.sourceType === 'question_bank' ? 'parsing_bank' : 'chunking';
+    for (const p of checkpoint.pages) {
+      p.needsOcr = false;
+    }
+  }
   await repository.jobsRepo.updateJobProgress(jobId, {
     status: 'running',
     errorMessage: undefined,
+    checkpoint: JSON.stringify(checkpoint),
   });
   void executeCheckpointPipeline(jobId, checkpoint);
 }
@@ -298,33 +341,48 @@ async function executeCheckpointPipeline(
       await saveCheckpoint(60, checkpoint.lastProcessedPage, Math.max(1, checkpoint.totalPages));
     }
 
-    // Stage 2: Optional OCR on scanned PDF pages
+    // Stage 2: Optional OCR on scanned PDF pages (with non-blocking safety timeout)
     if (checkpoint.stage === 'ocr') {
       const scannedCount = checkpoint.pages.filter((p) => p.needsOcr && !p.ocrApplied).length;
       if (scannedCount > 0) {
-        await repository.jobsRepo.updateJobProgress(jobId, {
-          type: 'ocr',
-          title: `Running OCR on ${scannedCount} scanned page(s)…`,
-        });
+        try {
+          await repository.jobsRepo.updateJobProgress(jobId, {
+            type: 'ocr',
+            title: `Running OCR on ${scannedCount} scanned page(s)…`,
+          });
 
-        const updatedPages = await ocrScannedPdfPages(buffer, checkpoint.pages, checkpoint.language, {
-          signal,
-          onProgress: (evt) => {
-            void repository.jobsRepo.updateJobProgress(jobId, {
-              progress: Math.round(60 + (evt.current / evt.total) * 25),
-              processedItems: evt.current,
-              totalItems: evt.total,
-            });
-          },
-          onPageComplete: async (updatedPage) => {
-            const idx = checkpoint.pages.findIndex((p) => p.pageNumber === updatedPage.pageNumber);
-            if (idx >= 0) checkpoint.pages[idx] = updatedPage;
-            await repository.jobsRepo.updateJobProgress(jobId, {
-              checkpoint: JSON.stringify(checkpoint),
-            });
-          },
-        });
-        checkpoint.pages = updatedPages;
+          // Maximum 20 seconds total OCR safety budget
+          const ocrTimeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('OCR overall timeout exceeded')), 20000)
+          );
+
+          const updatedPages = await Promise.race([
+            ocrScannedPdfPages(buffer, checkpoint.pages, checkpoint.language, {
+              signal,
+              onProgress: (evt) => {
+                void repository.jobsRepo.updateJobProgress(jobId, {
+                  progress: Math.round(60 + (evt.current / evt.total) * 25),
+                  processedItems: evt.current,
+                  totalItems: evt.total,
+                });
+              },
+              onPageComplete: async (updatedPage) => {
+                const idx = checkpoint.pages.findIndex((p) => p.pageNumber === updatedPage.pageNumber);
+                if (idx >= 0) checkpoint.pages[idx] = updatedPage;
+                await repository.jobsRepo.updateJobProgress(jobId, {
+                  checkpoint: JSON.stringify(checkpoint),
+                });
+              },
+            }),
+            ocrTimeout,
+          ]);
+          checkpoint.pages = updatedPages;
+        } catch (ocrErr) {
+          console.warn('OCR skipped or timed out, continuing with extracted PDF text:', ocrErr);
+          for (const p of checkpoint.pages) {
+            p.needsOcr = false;
+          }
+        }
       }
 
       checkpoint.stage = checkpoint.sourceType === 'question_bank' ? 'parsing_bank' : 'chunking';

@@ -13,6 +13,7 @@ import {
   Trash2,
   Upload,
   X,
+  Zap,
 } from 'lucide-react';
 import { db } from '@/src/features/storage/db';
 import { repository } from '@/src/features/storage/repository';
@@ -20,6 +21,7 @@ import { loadSampleClass10Library } from '@/src/features/storage/sample-data';
 import {
   cancelIngestionJob,
   resumeIngestionJob,
+  skipOcrAndFinishJob,
 } from '@/src/features/ingestion/ingestion-service';
 import {
   LocalBM25Index,
@@ -389,35 +391,54 @@ export function LibraryPage() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {job.status === 'running' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => cancelIngestionJob(job.id)}
-                      leftIcon={<Pause className="h-3.5 w-3.5" />}
-                    >
-                      Pause
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => void skipOcrAndFinishJob(job.id)}
+                        leftIcon={<Zap className="h-3.5 w-3.5" />}
+                        title="Skip OCR and finish indexing immediately with digital text"
+                      >
+                        Skip OCR &amp; Finish
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void cancelIngestionJob(job.id)}
+                        leftIcon={<Pause className="h-3.5 w-3.5" />}
+                      >
+                        Pause
+                      </Button>
+                    </>
                   )}
                   {(job.status === 'paused' || job.status === 'failed') && job.checkpoint && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void resumeIngestionJob(job.id)}
-                      leftIcon={<Play className="h-3.5 w-3.5" />}
-                    >
-                      Resume
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => void skipOcrAndFinishJob(job.id)}
+                        leftIcon={<Zap className="h-3.5 w-3.5" />}
+                        title="Skip OCR and finish indexing immediately with digital text"
+                      >
+                        Skip OCR &amp; Finish
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void resumeIngestionJob(job.id)}
+                        leftIcon={<Play className="h-3.5 w-3.5" />}
+                      >
+                        Resume
+                      </Button>
+                    </>
                   )}
-                  {job.status !== 'running' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Dismiss task"
-                      onClick={() => void repository.jobsRepo.deleteJob(job.id)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Dismiss task"
+                    onClick={() => void repository.jobsRepo.deleteJob(job.id)}
+                    title="Dismiss or cancel task"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}
@@ -500,10 +521,41 @@ export function LibraryPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-hairline)]">
+                    {book.status === 'processing' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                        onClick={async () => {
+                          const matchedJob = jobs.find((j) => {
+                            if (!j.checkpoint) return false;
+                            try {
+                              return (JSON.parse(j.checkpoint) as { bookId?: string }).bookId === book.id;
+                            } catch {
+                              return false;
+                            }
+                          });
+                          if (matchedJob) {
+                            await skipOcrAndFinishJob(matchedJob.id);
+                          } else {
+                            await repository.libraryRepo.saveBook({
+                              ...book,
+                              status: 'ready',
+                              updatedAt: Date.now(),
+                            });
+                          }
+                        }}
+                        leftIcon={<Zap className="h-3.5 w-3.5 text-amber-500" />}
+                        title="Finish indexing immediately without waiting for OCR"
+                      >
+                        ⚡ Finish Indexing
+                      </Button>
+                    )}
                     {book.sourceType === 'textbook' && (
                       <>
                         <Button
                           size="sm"
+                          disabled={book.status === 'processing'}
                           onClick={() => {
                             setQuickGenBook(book);
                             setQuickGenOpen(true);

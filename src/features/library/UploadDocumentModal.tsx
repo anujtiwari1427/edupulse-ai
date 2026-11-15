@@ -56,7 +56,7 @@ function UploadDocumentModalInner({
   const [classLevel, setClassLevel] = React.useState(defaultClassLevel);
   const [subject, setSubject] = React.useState(defaultSubject);
   const [language, setLanguage] = React.useState<LanguageCode>(defaultLanguage);
-  const [ocrEnabled, setOcrEnabled] = React.useState(true);
+  const [ocrEnabled, setOcrEnabled] = React.useState(false);
   const [aiChapterDetection, setAiChapterDetection] = React.useState(true);
   const [defaultMarks, setDefaultMarks] = React.useState('1');
   const [copyrightConfirmed, setCopyrightConfirmed] = React.useState(false);
@@ -260,8 +260,8 @@ function UploadDocumentModalInner({
         <Switch
           checked={ocrEnabled}
           onCheckedChange={setOcrEnabled}
-          label="Run local OCR on scanned PDF pages"
-          description="Automatically detects image-only pages (< 35 characters) and extracts text with Tesseract."
+          label="Run local OCR on image-only scanned pages (Slow)"
+          description="Leave OFF for standard digital textbooks (recommended for fast indexing). Enable only for scanned photocopy PDFs."
         />
 
         <div className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-3.5">
