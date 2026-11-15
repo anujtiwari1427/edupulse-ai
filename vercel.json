@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/((?!assets/|fonts/|manifest\\.webmanifest|sw\\.js|workbox-.*|.*\\.(?:png|svg|ico|txt|xml|woff2?|ttf)).*)",
