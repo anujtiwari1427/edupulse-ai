@@ -99,20 +99,24 @@ export const DEFAULT_BACKUP_META: BackupMetaRecord = {
 export function createRepository(database: EduPulseDB = db) {
   const settingsRepo = {
     async get(): Promise<SettingsRecord> {
-      const existing = await database.settings.get('default');
-      if (existing) {
-        const parsed = SettingsSchema.safeParse(existing);
-        if (parsed.success) {
-          const currentKey = parsed.data.aiApiKey?.trim();
-          const isRetired = currentKey ? RETIRED_AI_KEYS.has(currentKey) : false;
-          const activeKey = !currentKey || isRetired ? DEFAULT_AI_KEY : currentKey;
-          const hasCustomModel = parsed.data.aiModel && parsed.data.aiModel !== 'gemini-4-hydrogen';
-          return {
-            ...parsed.data,
-            aiModel: hasCustomModel ? parsed.data.aiModel : DEFAULT_AI_MODEL,
-            aiApiKey: activeKey,
-          };
+      try {
+        const existing = await database.settings.get('default');
+        if (existing) {
+          const parsed = SettingsSchema.safeParse(existing);
+          if (parsed.success) {
+            const currentKey = parsed.data.aiApiKey?.trim();
+            const isRetired = currentKey ? RETIRED_AI_KEYS.has(currentKey) : false;
+            const activeKey = !currentKey || isRetired ? DEFAULT_AI_KEY : currentKey;
+            const hasCustomModel = parsed.data.aiModel && parsed.data.aiModel !== 'gemini-4-hydrogen';
+            return {
+              ...parsed.data,
+              aiModel: hasCustomModel ? parsed.data.aiModel : DEFAULT_AI_MODEL,
+              aiApiKey: activeKey,
+            };
+          }
         }
+      } catch {
+        // Fall back gracefully during initial DB upgrade/open in liveQuery context
       }
       return { ...DEFAULT_SETTINGS, updatedAt: Date.now() };
     },
@@ -132,10 +136,14 @@ export function createRepository(database: EduPulseDB = db) {
 
   const backupMetaRepo = {
     async get(): Promise<BackupMetaRecord> {
-      const existing = await database.backupMeta.get('default');
-      if (existing) {
-        const parsed = BackupMetaSchema.safeParse(existing);
-        if (parsed.success) return parsed.data;
+      try {
+        const existing = await database.backupMeta.get('default');
+        if (existing) {
+          const parsed = BackupMetaSchema.safeParse(existing);
+          if (parsed.success) return parsed.data;
+        }
+      } catch {
+        // Fall back gracefully during initial DB upgrade/open in liveQuery context
       }
       return { ...DEFAULT_BACKUP_META };
     },
