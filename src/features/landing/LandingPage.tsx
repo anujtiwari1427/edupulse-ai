@@ -11,6 +11,7 @@ import {
   FolderLock,
   Layers,
   Languages,
+  Menu,
   RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
@@ -87,6 +88,7 @@ export function LandingPage() {
     'grounded'
   );
   const [openFaq, setOpenFaq] = React.useState<number | null>(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const triggerCamera = (preset: CameraPreset) => {
     setCameraPreset(preset);
@@ -138,7 +140,7 @@ export function LandingPage() {
 
           <nav
             aria-label="Primary navigation"
-            className="hidden md:flex items-center gap-7 text-sm font-semibold text-[var(--text-secondary)]"
+            className="hidden lg:flex items-center gap-7 text-sm font-semibold text-[var(--text-secondary)]"
           >
             <a
               href="#how-it-works"
@@ -167,6 +169,16 @@ export function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls={mobileMenuOpen ? 'landing-mobile-nav' : undefined}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] lg:hidden"
+            >
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
             <Link to="/app">
               <Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
                 Open Workspace
@@ -174,6 +186,29 @@ export function LandingPage() {
             </Link>
           </div>
         </div>
+        {mobileMenuOpen && (
+          <nav
+            id="landing-mobile-nav"
+            aria-label="Mobile navigation"
+            className="glass-panel mx-3 mb-3 grid grid-cols-2 gap-2 rounded-2xl p-3 lg:hidden"
+          >
+            {[
+              ['How it works', '#how-it-works'],
+              ['Features', '#features'],
+              ['Privacy', '#privacy'],
+              ['FAQ', '#faq'],
+            ].map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
 
       <main>
@@ -240,7 +275,7 @@ export function LandingPage() {
 
               {/* Right Expansive Interactive 3D Studio Viewport */}
               <div className="lg:col-span-7 flex flex-col">
-                <div className="relative h-[430px] sm:h-[500px] lg:h-[560px] w-full overflow-hidden rounded-3xl border border-indigo-200/50 dark:border-indigo-900/40 bg-[var(--bg-subtle)] shadow-xl">
+                <div className="relative h-[360px] sm:h-[500px] lg:h-[560px] w-full overflow-hidden rounded-3xl border border-indigo-200/50 dark:border-indigo-900/40 bg-[var(--bg-subtle)] shadow-xl">
                   <StudioHeroCanvas
                     board={boardPreset}
                     setFocus={setFocus}
@@ -287,10 +322,10 @@ export function LandingPage() {
                     ) : (
                       <div
                         aria-label="3D Studio Controls"
-                        className="pointer-events-auto flex w-full flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-2.5 py-1.5 shadow-sm"
+                        className="pointer-events-auto grid w-full grid-cols-1 gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-2 py-2 shadow-sm sm:flex sm:flex-wrap sm:items-center sm:justify-center lg:flex-nowrap lg:justify-between lg:gap-1.5"
                       >
                         {/* Board / Language selector */}
-                        <div className="flex items-center gap-0.5" role="group" aria-label="Board texture preset">
+                        <div className="flex items-center justify-center gap-0.5 sm:justify-start" role="group" aria-label="Board texture preset">
                           {(Object.keys(BOARD_META) as BoardPreset[]).map((id) => (
                             <button
                               key={id}
@@ -309,7 +344,7 @@ export function LandingPage() {
                         </div>
 
                         {/* Parallel Set fan selector */}
-                        <div className="flex items-center gap-0.5" role="group" aria-label="Set focus">
+                        <div className="flex items-center justify-center gap-0.5 sm:justify-start" role="group" aria-label="Set focus">
                           {(
                             [
                               ['all', 'All'],
@@ -335,7 +370,7 @@ export function LandingPage() {
                         </div>
 
                         {/* View mode & Zen toggle */}
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 sm:ml-auto">
                           <button
                             type="button"
                             aria-pressed={exploded}
@@ -355,7 +390,7 @@ export function LandingPage() {
                             type="button"
                             onClick={() => triggerCamera('overhead')}
                             className={cn(
-                              'hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap',
+                            'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap',
                               cameraPreset === 'overhead'
                                 ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]'
                                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
@@ -388,8 +423,8 @@ export function LandingPage() {
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between px-1 text-[11px] text-[var(--text-muted)]">
-                  <span>Drag to orbit · Scroll to zoom · Click any studio object to inspect</span>
+                <div className="mt-2.5 flex flex-col gap-1 px-1 text-[11px] text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
+                  <span>Drag or touch to orbit · Pinch or scroll to zoom · Tap to inspect</span>
                   <span className="font-mono">
                     {BOARD_META[boardPreset].label}
                   </span>
@@ -746,7 +781,7 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-1 self-start">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-1 self-start">
               {(
                 [
                   ['grounded', 'Grounded Generation'],

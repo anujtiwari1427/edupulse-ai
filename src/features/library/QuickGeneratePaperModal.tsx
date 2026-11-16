@@ -37,6 +37,7 @@ export function QuickGeneratePaperModal({
 
   const books = useLiveQuery(() => db.books.filter((b) => b.sourceType === 'textbook').toArray(), [], []);
   const templates = useLiveQuery(() => db.templates.toArray(), [], []);
+  const settings = useLiveQuery(() => repository.settingsRepo.get(), [], null);
 
   const [selectedBookIdOverride, setSelectedBookIdOverride] = React.useState<string | null>(null);
   const selectedBookId = selectedBookIdOverride ?? initialBook?.id ?? books[0]?.id ?? '';
@@ -186,12 +187,35 @@ export function QuickGeneratePaperModal({
     navigate(`/app/create?${params.toString()}`);
   };
 
+  const providerDisplay = React.useMemo(() => {
+    if (!settings) return 'Google Gemini (gemini-3.5-flash)';
+    if (settings.aiProvider === 'ollama') {
+      return `Local Ollama (${settings.aiModel || 'llama3.2'})`;
+    }
+    if (settings.aiProvider === 'groq') {
+      return `Groq Cloud (${settings.aiModel || 'llama-3.3-70b-versatile'})`;
+    }
+    if (settings.aiProvider === 'openrouter') {
+      return `OpenRouter (${settings.aiModel || 'meta-llama/llama-3.2-3b-instruct:free'})`;
+    }
+    if (settings.aiProvider === 'openai') {
+      return `OpenAI (${settings.aiModel || 'gpt-4o-mini'})`;
+    }
+    if (settings.aiProvider === 'anthropic') {
+      return `Anthropic Claude (${settings.aiModel || 'claude-3-5-haiku-latest'})`;
+    }
+    if (settings.aiProvider === 'proxy') {
+      return `Stateless Proxy (${settings.aiModel || 'gemini-3.5-flash'})`;
+    }
+    return `Google Gemini (${settings.aiModel || 'gemini-3.5-flash'})`;
+  }, [settings]);
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
       title="⚡ Generate Question Paper from Chapters"
-      description="Select chapters from the dropdown menu and generate an exam paper with Gemini AI."
+      description={`Select chapters from the dropdown menu and generate an exam paper with ${providerDisplay}.`}
       size="lg"
       footer={
         <>
@@ -286,7 +310,7 @@ export function QuickGeneratePaperModal({
         <div className="flex items-center justify-between p-3 rounded-xl border border-indigo-200/60 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-950/20 text-xs text-indigo-950 dark:text-indigo-200">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-indigo-500 shrink-0" />
-            <span>AI Provider: <strong>Google Gemini (gemini-3.5-flash)</strong></span>
+            <span>AI Provider: <strong>{providerDisplay}</strong></span>
           </div>
           <Badge tone="success" size="sm" dot>
             Ready

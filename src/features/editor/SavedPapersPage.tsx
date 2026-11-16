@@ -157,7 +157,7 @@ export function SavedPapersPage() {
             All locally authored and generated question papers stored on this device.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <input
             ref={importInputRef}
             type="file"
@@ -171,11 +171,14 @@ export function SavedPapersPage() {
             variant="outline"
             onClick={() => importInputRef.current?.click()}
             leftIcon={<Upload className="h-3.5 w-3.5" />}
+            className="w-full sm:w-auto"
           >
             Import JSON
           </Button>
-          <Link to="/app/create">
-            <Button leftIcon={<FilePlus2 className="h-4 w-4" />}>Create Paper</Button>
+          <Link to="/app/create" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto" leftIcon={<FilePlus2 className="h-4 w-4" />}>
+              Create Paper
+            </Button>
           </Link>
         </div>
       </div>
@@ -193,14 +196,14 @@ export function SavedPapersPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] self-start">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] self-start">
               {(['all', 'draft', 'finalized', 'archived'] as const).map((status) => (
                 <button
                   key={status}
                   type="button"
                   onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`min-h-9 px-3 py-1 text-xs font-semibold rounded-lg capitalize transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                     statusFilter === status
                       ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs font-bold'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -212,10 +215,16 @@ export function SavedPapersPage() {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="hidden sm:flex items-center rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-0.5">
+            <div
+              role="group"
+              aria-label="Saved paper view"
+              className="flex items-center rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-0.5"
+            >
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid'}
                 className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                   viewMode === 'grid'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs'
@@ -228,6 +237,8 @@ export function SavedPapersPage() {
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
+                aria-label="List view"
+                aria-pressed={viewMode === 'list'}
                 className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                   viewMode === 'list'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-xs'
@@ -313,8 +324,8 @@ export function SavedPapersPage() {
                     </div>
                   </div>
 
-                  <div className="pt-3.5 flex items-center justify-between border-t border-[var(--border-hairline)] gap-1.5">
-                    <Link to={`/app/editor/${paper.id}`} className="flex-1">
+                  <div className="pt-3.5 flex flex-wrap items-center justify-between border-t border-[var(--border-hairline)] gap-1.5">
+                    <Link to={`/app/editor/${paper.id}`} className="min-w-[7rem] flex-1">
                       <Button size="sm" className="w-full justify-center">
                         Open Studio
                       </Button>

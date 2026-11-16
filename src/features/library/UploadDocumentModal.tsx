@@ -252,8 +252,8 @@ function UploadDocumentModalInner({
           <Switch
             checked={aiChapterDetection}
             onCheckedChange={setAiChapterDetection}
-            label="✨ AI Chapter & Syllabus Understanding (Gemini)"
-            description="Uses Gemini 3.5 Flash to analyze document TOC and structure for precise chapter boundaries and topics."
+            label="✨ AI Chapter & Syllabus Understanding"
+            description="Uses configured AI provider to analyze document structure for precise chapter boundaries and topics."
           />
         )}
 

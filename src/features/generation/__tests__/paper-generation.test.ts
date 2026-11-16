@@ -7,6 +7,7 @@ import { generateQuestionPaperJob } from '../generation-service';
 import {
   buildSectionQuestionsWithChoices,
   computeGroundingScore,
+  extractJsonFromAIResponse,
   generateParallelSets,
   parseAndNormalizeAIQuestions,
   resolvePaperForSet,
@@ -393,5 +394,35 @@ describe('Paper Selection, AI Repair, Sets A/B/C & Generation Job', () => {
     expect(genConfig?.maxOutputTokens).toBe(8192);
     expect(genConfig?.thinkingConfig).toEqual({ thinkingLevel: 'LOW' });
     expect(genConfig?.responseSchema).toBeDefined();
+  });
+
+  it('extractJsonFromAIResponse strips <think> reasoning blocks and repairs trailing commas', () => {
+    // 1. DeepSeek R1 / Ollama <think> block
+    const deepSeekOutput = `<think>
+I need to generate a question about photosynthesis.
+Let's make sure it has clear options and answer.
+</think>
+\`\`\`json
+{
+  "questions": [
+    { "text": "What is chlorophyll?", "type": "short", "marks": 1, "answer": "Green pigment", },
+  ],
+}
+\`\`\``;
+
+    const parsed = extractJsonFromAIResponse<{ questions: Array<{ text: string }> }>(deepSeekOutput);
+    expect(parsed).toBeDefined();
+    expect(parsed?.questions).toHaveLength(1);
+    expect(parsed?.questions[0]?.text).toBe('What is chlorophyll?');
+
+    // 2. Direct JSON array with trailing comma
+    const arrayOutput = `[
+      { "id": "1", "title": "Sets", },
+      { "id": "2", "title": "Real Numbers", },
+    ]`;
+    const parsedArray = extractJsonFromAIResponse<{ questions: Array<{ title: string }> }>(arrayOutput);
+    expect(parsedArray).toBeDefined();
+    expect(parsedArray?.questions).toHaveLength(2);
+    expect(parsedArray?.questions[1]?.title).toBe('Real Numbers');
   });
 });

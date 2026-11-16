@@ -535,10 +535,15 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
       )}
 
       {/* Mobile View Switcher */}
-      <div className="no-print flex lg:hidden items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
+      <div
+        role="group"
+        aria-label="Paper editor view"
+        className="no-print flex lg:hidden items-center gap-1 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-subtle)] p-1"
+      >
         <button
           type="button"
           onClick={() => setMobileTab('edit')}
+          aria-pressed={mobileTab === 'edit'}
           className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
             mobileTab === 'edit'
               ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'
@@ -550,6 +555,7 @@ function PaperEditorInner({ initialPaper }: { initialPaper: PaperRecord }) {
         <button
           type="button"
           onClick={() => setMobileTab('preview')}
+          aria-pressed={mobileTab === 'preview'}
           className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
             mobileTab === 'preview'
               ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm'

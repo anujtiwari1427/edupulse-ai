@@ -68,7 +68,7 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
       setChapters(detected);
       addToast({
         title: 'AI Chapter Understanding complete',
-        description: `Gemini detected ${detected.length} chapters and sub-topics from the document.`,
+        description: `AI detected ${detected.length} chapters and sub-topics from the document.`,
         variant: 'success',
       });
     } catch (err) {
@@ -153,7 +153,7 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
               Smart Chapter &amp; Syllabus Detection
             </div>
             <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80 mt-0.5">
-              Auto-detect chapters from the Table of Contents, or run deep AI syllabus analysis with Gemini.
+              Auto-detect chapters from Table of Contents, or run deep AI syllabus analysis.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -164,7 +164,7 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
               onClick={() => void handleAutoDetectFromTOC()}
               leftIcon={<Zap className="h-3.5 w-3.5 text-amber-500" />}
               className="bg-white dark:bg-zinc-900 font-medium"
-              title="Fast 0.1s Table of Contents (Index) extraction"
+              title="Fast Table of Contents (Index) extraction"
             >
               ⚡ Fast TOC Scan
             </Button>
@@ -175,7 +175,7 @@ export function ChapterManagerModal({ book, open, onOpenChange }: ChapterManager
               onClick={() => void handleAiDetectChapters()}
               leftIcon={<Sparkles className="h-3.5 w-3.5 text-indigo-500" />}
               className="bg-white dark:bg-zinc-900 font-medium"
-              title="Gemini AI syllabus & sub-topics analysis"
+              title="AI syllabus & sub-topics analysis"
             >
               AI Chapter Scan
             </Button>

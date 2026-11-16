@@ -22,9 +22,22 @@ export interface AICompletionResult {
 export const DEFAULT_MODELS_BY_PROVIDER: Record<AIProviderType, string[]> = {
   none: [],
   gemini: ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'],
+  ollama: ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'qwen2.5', 'deepseek-r1'],
+  groq: [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
+  ],
+  openrouter: [
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemini-2.0-flash-exp:free',
+    'deepseek/deepseek-r1:free',
+    'anthropic/claude-3.5-sonnet',
+  ],
   openai: ['gpt-4o-mini', 'gpt-4o'],
   anthropic: ['claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest'],
-  proxy: ['gemini-3.5-flash'],
+  proxy: ['gemini-3.5-flash', 'llama3.2', 'gpt-4o-mini'],
 };
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -101,14 +114,21 @@ async function fetchWithTimeoutAndRetry(
   throw lastError instanceof Error ? lastError : new AppError('AI request failed.');
 }
 
-export function isAIConfigured(settings: Pick<SettingsRecord, 'aiProvider' | 'aiApiKey' | 'proxyEndpoint'>): boolean {
+export function isAIConfigured(
+  settings: Pick<SettingsRecord, 'aiProvider' | 'aiApiKey' | 'proxyEndpoint'> & {
+    ollamaEndpoint?: string;
+  }
+): boolean {
   if (settings.aiProvider === 'none') return false;
+  if (settings.aiProvider === 'ollama') return true;
   if (settings.aiProvider === 'proxy') return Boolean(settings.proxyEndpoint.trim());
   return Boolean(settings.aiApiKey.trim());
 }
 
 export async function callAIProvider(
-  settings: Pick<SettingsRecord, 'aiProvider' | 'aiModel' | 'aiApiKey' | 'proxyEndpoint'>,
+  settings: Pick<SettingsRecord, 'aiProvider' | 'aiModel' | 'aiApiKey' | 'proxyEndpoint'> & {
+    ollamaEndpoint?: string;
+  },
   request: AICompletionRequest
 ): Promise<AICompletionResult> {
   if (settings.aiProvider === 'none') {
@@ -288,6 +308,182 @@ export async function callAIProvider(
     return { text, provider: 'anthropic', model, latencyMs: Date.now() - startedAt };
   }
 
+  // Local Ollama (100% Offline & Free)
+  if (settings.aiProvider === 'ollama') {
+    const rawEndpoint = (settings.ollamaEndpoint || 'http://localhost:11434').trim().replace(/\/+$/, '');
+    const isV1 = rawEndpoint.endsWith('/v1') || rawEndpoint.endsWith('/v1/chat/completions');
+    const endpoint = isV1
+      ? rawEndpoint.endsWith('/chat/completions')
+        ? rawEndpoint
+        : `${rawEndpoint}/chat/completions`
+      : `${rawEndpoint}/api/chat`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (settings.aiApiKey.trim()) {
+      headers['Authorization'] = `Bearer ${settings.aiApiKey.trim()}`;
+    }
+
+    try {
+      if (isV1) {
+        const res = await fetchWithTimeoutAndRetry(
+          endpoint,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model,
+              temperature,
+              response_format: { type: 'json_object' },
+              messages: [
+                { role: 'system', content: request.systemPrompt },
+                { role: 'user', content: request.userPrompt },
+              ],
+            }),
+          },
+          timeoutMs,
+          request.signal
+        );
+        const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        const text = payload.choices?.[0]?.message?.content ?? '';
+        if (!text.trim()) {
+          throw new AppError('Ollama returned an empty response.', { code: 'EMPTY_AI_RESPONSE' });
+        }
+        return { text, provider: 'ollama', model, latencyMs: Date.now() - startedAt };
+      } else {
+        const res = await fetchWithTimeoutAndRetry(
+          endpoint,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: request.systemPrompt },
+                { role: 'user', content: request.userPrompt },
+              ],
+              format: 'json',
+              stream: false,
+              options: {
+                temperature,
+              },
+            }),
+          },
+          timeoutMs,
+          request.signal
+        );
+        const payload = (await res.json()) as {
+          message?: { content?: string };
+          response?: string;
+        };
+        const text = payload.message?.content ?? payload.response ?? '';
+        if (!text.trim()) {
+          throw new AppError('Ollama returned an empty response.', { code: 'EMPTY_AI_RESPONSE' });
+        }
+        return { text, provider: 'ollama', model, latencyMs: Date.now() - startedAt };
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/Failed to fetch|NetworkError|CORS|load failed/i.test(msg)) {
+        throw new AppError(
+          `Cannot connect to local Ollama at ${rawEndpoint}. Ensure Ollama is running ('ollama run ${model}') and permits browser connections: run 'set OLLAMA_ORIGINS=*' (Windows) or 'OLLAMA_ORIGINS=* ollama serve' before starting Ollama.`,
+          { code: 'OLLAMA_CONNECTION_ERROR', cause: err }
+        );
+      }
+      throw err;
+    }
+  }
+
+  // Groq Ultra-Fast Cloud Inference
+  if (settings.aiProvider === 'groq') {
+    const key = settings.aiApiKey.trim();
+    if (!key) {
+      throw new AppError(
+        'Missing Groq API key in local settings. Get a free high-speed key at https://console.groq.com/keys',
+        { code: 'MISSING_API_KEY' }
+      );
+    }
+
+    const res = await fetchWithTimeoutAndRetry(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature,
+          max_tokens: Math.min(maxTokens, 8192),
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: request.systemPrompt },
+            { role: 'user', content: request.userPrompt },
+          ],
+        }),
+      },
+      timeoutMs,
+      request.signal
+    );
+
+    const payload = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = payload.choices?.[0]?.message?.content ?? '';
+    if (!text.trim()) {
+      throw new AppError('Groq returned an empty response.', { code: 'EMPTY_AI_RESPONSE' });
+    }
+    return { text, provider: 'groq', model, latencyMs: Date.now() - startedAt };
+  }
+
+  // OpenRouter Multi-Model Aggregator (supports free and open-source models)
+  if (settings.aiProvider === 'openrouter') {
+    const key = settings.aiApiKey.trim();
+    if (!key) {
+      throw new AppError(
+        'Missing OpenRouter API key in local settings. Get an API key at https://openrouter.ai/keys',
+        { code: 'MISSING_API_KEY' }
+      );
+    }
+
+    const res = await fetchWithTimeoutAndRetry(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+          'HTTP-Referer': 'https://edupulse-ai-gamma.vercel.app',
+          'X-Title': 'EduPulse AI Studio',
+        },
+        body: JSON.stringify({
+          model,
+          temperature,
+          max_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: request.systemPrompt },
+            { role: 'user', content: request.userPrompt },
+          ],
+        }),
+      },
+      timeoutMs,
+      request.signal
+    );
+
+    const payload = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = payload.choices?.[0]?.message?.content ?? '';
+    if (!text.trim()) {
+      throw new AppError('OpenRouter returned an empty response.', { code: 'EMPTY_AI_RESPONSE' });
+    }
+    return { text, provider: 'openrouter', model, latencyMs: Date.now() - startedAt };
+  }
+
   // Stateless Proxy Mode
   const proxyUrl = settings.proxyEndpoint.trim() || '/api/ai/generate';
   const res = await fetchWithTimeoutAndRetry(
@@ -316,7 +512,9 @@ export async function callAIProvider(
 }
 
 export async function testAIConnection(
-  settings: Pick<SettingsRecord, 'aiProvider' | 'aiModel' | 'aiApiKey' | 'proxyEndpoint'>
+  settings: Pick<SettingsRecord, 'aiProvider' | 'aiModel' | 'aiApiKey' | 'proxyEndpoint'> & {
+    ollamaEndpoint?: string;
+  }
 ): Promise<{ ok: boolean; latencyMs: number; model: string; message: string }> {
   const result = await callAIProvider(settings, {
     systemPrompt: 'Respond only with valid JSON.',

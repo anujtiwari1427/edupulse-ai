@@ -477,13 +477,21 @@ async function executeCheckpointPipeline(
     // Stage 3B: Chapter Detection & Chunking for Textbooks
     let detected = detectChaptersFromPages(checkpoint.pages, checkpoint.outline);
 
-    // If AI chapter detection is enabled, attempt Gemini AI-driven syllabus and chapter extraction
-    if (checkpoint.aiChapterDetection !== false) {
+    // If local detection only produced the single fallback chapter and AI is enabled, attempt AI-driven syllabus scan
+    const isSingleFallback =
+      detected.length <= 1 &&
+      (detected.length === 0 || detected[0]?.title === 'Chapter 1: Full Document');
+
+    if (
+      checkpoint.aiChapterDetection !== false &&
+      isSingleFallback &&
+      process.env.NODE_ENV !== 'test'
+    ) {
       try {
         const settings = await repository.settingsRepo.get();
         if (settings && isAIConfigured(settings)) {
           await repository.jobsRepo.updateJobProgress(jobId, {
-            title: `Analyzing chapters & syllabus with Gemini AI…`,
+            title: `Analyzing chapters & syllabus with AI…`,
             progress: 90,
           });
           const currentBook = await repository.libraryRepo.getBook(checkpoint.bookId);

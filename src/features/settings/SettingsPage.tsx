@@ -725,7 +725,7 @@ export function SettingsPage() {
               </Alert>
 
               <div>
-                <Label>Generation Mode</Label>
+                <Label>Generation Mode &amp; AI Provider</Label>
                 <Select
                   value={settings.aiProvider}
                   onValueChange={(v) => {
@@ -739,11 +739,14 @@ export function SettingsPage() {
                   }}
                   ariaLabel="AI Provider Mode"
                   options={[
-                    { value: 'gemini', label: 'Google Gemini (Default AI - Recommended)' },
-                    { value: 'none', label: 'Offline / Bank-Only (No AI calls)' },
-                    { value: 'openai', label: 'OpenAI (BYOK)' },
-                    { value: 'anthropic', label: 'Anthropic Claude (BYOK)' },
+                    { value: 'gemini', label: 'Google Gemini (Default AI — Auto-Configured)' },
+                    { value: 'ollama', label: 'Local Ollama (100% Offline & Free — Recommended for Privacy)' },
+                    { value: 'groq', label: 'Groq (Ultra-Fast Cloud Inference — Free Tier)' },
+                    { value: 'openrouter', label: 'OpenRouter (Multi-Model & Free Open-Source Models)' },
+                    { value: 'openai', label: 'OpenAI (GPT-4o / GPT-4o-mini)' },
+                    { value: 'anthropic', label: 'Anthropic Claude (Claude 3.5 Haiku / Sonnet)' },
                     { value: 'proxy', label: 'Stateless Server Proxy (/api/ai)' },
+                    { value: 'none', label: 'Offline / Bank-Only (No AI calls)' },
                   ]}
                 />
               </div>
@@ -758,7 +761,7 @@ export function SettingsPage() {
                         key={`${settings.aiProvider}-${settings.aiModel}`}
                         defaultValue={settings.aiModel}
                         onChange={(e) => debouncedSaveSettings({ aiModel: e.target.value })}
-                        placeholder="gemini-3.5-flash"
+                        placeholder={DEFAULT_MODELS_BY_PROVIDER[settings.aiProvider][0] || 'gemini-3.5-flash'}
                       />
                       {DEFAULT_MODELS_BY_PROVIDER[settings.aiProvider].length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -769,7 +772,11 @@ export function SettingsPage() {
                               onClick={() =>
                                 void repository.settingsRepo.update({ aiModel: preset })
                               }
-                              className="rounded border border-[var(--border-hairline)] bg-[var(--bg-subtle)] px-2 py-0.5 font-mono text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                              className={`rounded border px-2 py-0.5 font-mono text-[11px] cursor-pointer transition-colors ${
+                                settings.aiModel === preset
+                                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold'
+                                  : 'border-[var(--border-hairline)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                              }`}
                             >
                               {preset}
                             </button>
@@ -777,7 +784,25 @@ export function SettingsPage() {
                         </div>
                       )}
                     </div>
-                    {settings.aiProvider === 'proxy' ? (
+
+                    {settings.aiProvider === 'ollama' && (
+                      <div>
+                        <Label htmlFor="ai-ollama">Local Ollama Host Endpoint</Label>
+                        <Input
+                          id="ai-ollama"
+                          defaultValue={settings.ollamaEndpoint || 'http://localhost:11434'}
+                          onChange={(e) =>
+                            debouncedSaveSettings({ ollamaEndpoint: e.target.value })
+                          }
+                          placeholder="http://localhost:11434"
+                        />
+                        <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+                          Connects directly to your local Ollama server without requiring an API key.
+                        </p>
+                      </div>
+                    )}
+
+                    {settings.aiProvider === 'proxy' && (
                       <div>
                         <Label htmlFor="ai-proxy">Stateless Proxy Endpoint</Label>
                         <Input
@@ -789,10 +814,18 @@ export function SettingsPage() {
                           placeholder="/api/ai/generate"
                         />
                       </div>
-                    ) : (
+                    )}
+
+                    {settings.aiProvider !== 'ollama' && settings.aiProvider !== 'proxy' && (
                       <div>
                         <Label htmlFor="ai-key">
-                          Provider API Key (stored locally in IndexedDB)
+                          {settings.aiProvider === 'gemini'
+                            ? 'Gemini API Key (Auto-Configured default provided)'
+                            : settings.aiProvider === 'groq'
+                              ? 'Groq API Key (Free at console.groq.com)'
+                              : settings.aiProvider === 'openrouter'
+                                ? 'OpenRouter API Key (openrouter.ai/keys)'
+                                : 'Provider API Key (stored in local IndexedDB)'}
                         </Label>
                         <Input
                           id="ai-key"
@@ -800,11 +833,61 @@ export function SettingsPage() {
                           autoComplete="off"
                           defaultValue={settings.aiApiKey}
                           onChange={(e) => debouncedSaveSettings({ aiApiKey: e.target.value })}
-                          placeholder="Paste restricted API key…"
+                          placeholder={
+                            settings.aiProvider === 'groq'
+                              ? 'gsk_...'
+                              : settings.aiProvider === 'openrouter'
+                                ? 'sk-or-v1-...'
+                                : 'Paste restricted API key…'
+                          }
                         />
+                        {settings.aiProvider === 'groq' && (
+                          <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+                            <a
+                              href="https://console.groq.com/keys"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-indigo-600 dark:text-indigo-400 underline"
+                            >
+                              Get a free Groq key &rarr;
+                            </a>{' '}
+                            (High-speed Llama 3.3 70B inference)
+                          </p>
+                        )}
+                        {settings.aiProvider === 'openrouter' && (
+                          <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+                            <a
+                              href="https://openrouter.ai/keys"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-indigo-600 dark:text-indigo-400 underline"
+                            >
+                              Get an OpenRouter key &rarr;
+                            </a>{' '}
+                            (Access free models like Llama 3.2 3B &amp; DeepSeek R1)
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
+
+                  {settings.aiProvider === 'ollama' && (
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3.5 text-xs text-emerald-950 dark:text-emerald-200 space-y-1.5">
+                      <div className="font-semibold flex items-center gap-1.5">
+                        <span>⚡ Local Offline AI with Ollama</span>
+                        <span className="rounded bg-emerald-600/20 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
+                          100% Free &amp; Private
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-emerald-900/80 dark:text-emerald-300/80">
+                        Run models locally on your PC with zero cloud dependency.
+                      </p>
+                      <div className="rounded-lg bg-black/10 dark:bg-black/30 p-2 font-mono text-[11px] space-y-0.5 select-all">
+                        <div>1. Start model: <span className="font-semibold text-emerald-700 dark:text-emerald-300">ollama run {settings.aiModel || 'llama3.2'}</span></div>
+                        <div>2. Allow browser CORS: On Windows set <span className="font-semibold">OLLAMA_ORIGINS=*</span> in system env vars, then restart Ollama.</div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-3 pt-1">
                     <Button

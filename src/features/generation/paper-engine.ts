@@ -50,8 +50,12 @@ export interface TokenEstimate {
 
 export function extractJsonFromAIResponse<T = unknown>(raw?: string | null): T | null {
   if (!raw || typeof raw !== 'string') return null;
-  const cleaned = raw
-    .trim()
+
+  // 1. Strip reasoning blocks from models like DeepSeek-R1 / Qwen on Ollama or OpenRouter
+  let cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  // 2. Strip Markdown code fences
+  cleaned = cleaned
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/```\s*$/i, '')
     .trim();
@@ -62,19 +66,32 @@ export function extractJsonFromAIResponse<T = unknown>(raw?: string | null): T |
     const startIdx = cleaned.indexOf('{');
     const endIdx = cleaned.lastIndexOf('}');
     if (startIdx >= 0 && endIdx > startIdx) {
+      const slice = cleaned.slice(startIdx, endIdx + 1);
       try {
-        return JSON.parse(cleaned.slice(startIdx, endIdx + 1)) as T;
+        return JSON.parse(slice) as T;
       } catch {
-        // fall through
+        // Remove trailing commas before closing braces/brackets
+        const repaired = slice.replace(/,\s*([}\]])/g, '$1');
+        try {
+          return JSON.parse(repaired) as T;
+        } catch {
+          // fall through
+        }
       }
     }
     const arrStart = cleaned.indexOf('[');
     const arrEnd = cleaned.lastIndexOf(']');
     if (arrStart >= 0 && arrEnd > arrStart) {
+      const slice = cleaned.slice(arrStart, arrEnd + 1);
       try {
-        return { questions: JSON.parse(cleaned.slice(arrStart, arrEnd + 1)) } as T;
+        return { questions: JSON.parse(slice) } as T;
       } catch {
-        // fall through
+        const repaired = slice.replace(/,\s*([}\]])/g, '$1');
+        try {
+          return { questions: JSON.parse(repaired) } as T;
+        } catch {
+          // fall through
+        }
       }
     }
     return null;

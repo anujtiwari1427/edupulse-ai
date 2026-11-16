@@ -206,7 +206,7 @@ export function DashboardPage() {
       )}
 
       {/* Modern KPI Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
           {
             label: 'Textbooks & Banks',
@@ -246,21 +246,22 @@ export function DashboardPage() {
             <Link
               key={item.label}
               to={item.to}
-              className="group relative overflow-hidden rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-md"
+              aria-label={`${item.label}: ${item.value} ${item.badge}`}
+              className="group relative min-w-0 overflow-hidden rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-3.5 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-md"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">{item.label}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-xs font-semibold text-[var(--text-secondary)]">{item.label}</span>
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} transition-transform group-hover:scale-110`}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} transition-transform group-hover:scale-110`}
                 >
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
-              <div className="mt-3 flex items-baseline justify-between">
-                <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-[var(--text-primary)]">
+              <div className="mt-3 flex min-w-0 items-baseline justify-between gap-2">
+                <div className="text-2xl font-extrabold font-mono tabular-nums text-[var(--text-primary)] sm:text-3xl">
                   {item.value}
                 </div>
-                <span className="text-[10px] font-medium text-[var(--text-muted)] tracking-tight">
+                <span title={item.badge} className="max-w-[50%] truncate text-right text-[10px] font-medium text-[var(--text-muted)] tracking-tight">
                   {item.badge}
                 </span>
               </div>
@@ -273,7 +274,7 @@ export function DashboardPage() {
         {/* Recent Question Papers */}
         <div className="lg:col-span-8">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base font-bold">{t('dashboard.continueDrafts')}</CardTitle>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">
@@ -395,8 +396,11 @@ export function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Folder auto-sync</span>
-                  <span className="font-semibold text-[var(--text-primary)]">
+                  <span className="shrink-0">Folder auto-sync</span>
+                  <span
+                    title={folderStatus.folderName ?? undefined}
+                    className="max-w-[60%] truncate text-right font-semibold text-[var(--text-primary)]"
+                  >
                     {folderStatus.status === 'granted' && folderStatus.folderName
                       ? folderStatus.folderName
                       : folderStatus.status === 'prompt'

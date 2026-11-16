@@ -84,6 +84,7 @@ export const DEFAULT_SETTINGS: SettingsRecord = {
   aiModel: DEFAULT_AI_MODEL,
   aiApiKey: DEFAULT_AI_KEY,
   proxyEndpoint: '',
+  ollamaEndpoint: 'http://localhost:11434',
   backupReminderDays: 7,
   folderSyncEnabled: false,
   onboardingCompleted: false,

@@ -265,19 +265,19 @@ export function CreatePaperPage() {
             Choose syllabus chapters, configure your board blueprint, and generate a customizable paper.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 sm:justify-end">
           {aiEnabled ? (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium shadow-xs">
+            <div className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 shadow-xs dark:text-emerald-400">
               <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>AI Engine: <strong>Google Gemini ({settings?.aiModel || 'gemini-3.5-flash'})</strong></span>
+              <span className="min-w-0 break-words leading-5">AI Engine: <strong>Google Gemini ({settings?.aiModel || 'gemini-3.5-flash'})</strong></span>
             </div>
           ) : (
-            <Link to="/app/settings?tab=ai" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors">
+            <Link to="/app/settings?tab=ai" className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400">
               <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-              <span>AI Engine: <strong>Offline Bank Only</strong> (Click to enable Gemini)</span>
+              <span className="min-w-0 break-words leading-5">AI Engine: <strong>Offline Bank Only</strong> (Click to enable Gemini)</span>
             </Link>
           )}
         </div>
@@ -414,7 +414,11 @@ export function CreatePaperPage() {
                   `${chunks.length} indexed chunk(s)`,
                 ]}
               />
-              <Button onClick={() => setStep(2)} rightIcon={<ArrowRight className="h-4 w-4" />}>
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => setStep(2)}
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+              >
                 Next: Blueprint &amp; Template
               </Button>
             </CardContent>
@@ -474,8 +478,9 @@ export function CreatePaperPage() {
             chapters={scopedChapters}
           />
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
+              className="w-full sm:w-auto"
               variant="outline"
               onClick={() => setStep(1)}
               leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -483,6 +488,7 @@ export function CreatePaperPage() {
               Back: Sources
             </Button>
             <Button
+              className="w-full sm:w-auto"
               disabled={!summary.isValid}
               onClick={() => setStep(3)}
               rightIcon={<ArrowRight className="h-4 w-4" />}
@@ -574,8 +580,9 @@ export function CreatePaperPage() {
             </Card>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
+              className="w-full sm:w-auto"
               variant="outline"
               onClick={() => setStep(2)}
               leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -583,6 +590,7 @@ export function CreatePaperPage() {
               Back: Edit Blueprint
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={() => void handleStartGeneration()}
               leftIcon={<FilePlus2 className="h-4 w-4" />}
             >

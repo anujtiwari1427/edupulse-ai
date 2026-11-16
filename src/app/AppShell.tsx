@@ -155,7 +155,7 @@ export function AppShell() {
       <aside
         aria-label="Workspace navigation"
         className={cn(
-          'no-print hidden md:flex flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] transition-[width] duration-200 shrink-0 select-none shadow-xs',
+          'no-print hidden lg:flex flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] transition-[width] duration-200 shrink-0 select-none shadow-xs',
           sidebarCollapsed ? 'w-16' : 'w-64'
         )}
       >
@@ -258,6 +258,56 @@ export function AppShell() {
         )}
       </aside>
 
+      {/* Compact Tablet Navigation */}
+      <aside
+        aria-label="Workspace navigation"
+        className="no-print hidden md:flex lg:hidden w-16 shrink-0 flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] shadow-xs"
+      >
+        <Link
+          to="/app"
+          aria-label="EduPulse AI dashboard"
+          className="flex h-16 items-center justify-center border-b border-[var(--border-hairline)]"
+        >
+          <img src="/icon.svg" alt="" className="h-8 w-8 rounded-xl shadow-xs" />
+        </Link>
+        <nav className="flex-1 space-y-1 px-2 py-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                aria-label={item.label}
+                title={item.label}
+                className={({ isActive }) =>
+                  cn(
+                    'flex h-11 w-11 items-center justify-center rounded-xl border transition-colors',
+                    isActive
+                      ? 'border-indigo-200/60 bg-indigo-50 text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/70 dark:text-indigo-300'
+                      : 'border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+                  )
+                }
+              >
+                <Icon className="h-4 w-4" />
+              </NavLink>
+            );
+          })}
+        </nav>
+        <div className="flex h-12 items-center justify-center border-t border-[var(--border-hairline)]">
+          <div
+            aria-label="100% Local-First Privacy"
+            title="100% Local-First Privacy"
+            className="flex items-center justify-center"
+          >
+            <ShieldCheck
+              aria-hidden="true"
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+            />
+          </div>
+        </div>
+      </aside>
+
       {/* Mobile Drawer Nav */}
       {mobileNavOpen && (
         <div
@@ -317,7 +367,7 @@ export function AppShell() {
       {/* Main Column */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top Bar */}
-        <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 sm:px-6">
+        <header className="no-print glass-panel sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[var(--border-hairline)] px-4 sm:px-6">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -439,7 +489,7 @@ export function AppShell() {
         </header>
 
         {/* Main Viewport */}
-        <main className="flex-1 px-4 sm:px-6 py-6 pb-24 md:pb-8 max-w-6xl w-full mx-auto">
+        <main className="workspace-main flex-1 px-4 sm:px-6 py-6 pb-8 max-w-6xl w-full mx-auto">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
@@ -449,7 +499,7 @@ export function AppShell() {
       {/* Mobile Bottom Navigation (44px touch targets, compact height < 15% viewport) */}
       <nav
         aria-label="Mobile navigation"
-        className="no-print fixed bottom-0 inset-x-0 z-30 flex md:hidden items-center justify-around border-t border-[var(--border-hairline)] bg-[var(--bg-surface)] h-14 px-1"
+        className="workspace-bottom-nav glass-panel no-print fixed bottom-0 inset-x-0 z-30 flex md:hidden items-center justify-around border-t border-[var(--border-hairline)] h-14 px-1"
       >
         {[
           { to: '/app', label: 'Home', icon: Home, end: true },

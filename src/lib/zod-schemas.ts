@@ -54,7 +54,16 @@ export type JobStatus = z.infer<typeof JobStatusSchema>;
 export const ThemePreferenceSchema = z.enum(['system', 'light', 'dark']);
 export type ThemePreference = z.infer<typeof ThemePreferenceSchema>;
 
-export const AIProviderSchema = z.enum(['none', 'gemini', 'openai', 'anthropic', 'proxy']);
+export const AIProviderSchema = z.enum([
+  'none',
+  'gemini',
+  'ollama',
+  'groq',
+  'openrouter',
+  'openai',
+  'anthropic',
+  'proxy',
+]);
 export type AIProviderType = z.infer<typeof AIProviderSchema>;
 
 export const BookSchema = z.object({
@@ -281,6 +290,7 @@ export const SettingsSchema = z.object({
   aiModel: z.string().max(120).default('gemini-3.5-flash'),
   aiApiKey: z.string().max(400).default(getInitialAiKey),
   proxyEndpoint: z.string().max(300).default(''),
+  ollamaEndpoint: z.string().max(300).default('http://localhost:11434'),
   backupReminderDays: z.number().int().min(1).max(90).default(7),
   folderSyncEnabled: z.boolean().default(false),
   folderName: z.string().optional(),

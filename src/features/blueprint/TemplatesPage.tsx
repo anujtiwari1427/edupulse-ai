@@ -109,12 +109,12 @@ export function TemplatesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Select
             value={boardFilter}
             onValueChange={(v) => setBoardFilter(v as 'ALL' | BoardType)}
             ariaLabel="Filter templates by board"
-            className="w-44"
+            className="w-full sm:w-44"
             options={[
               { value: 'ALL', label: 'All Boards' },
               { value: 'CBSE', label: 'CBSE' },
@@ -123,7 +123,12 @@ export function TemplatesPage() {
               { value: 'OTHER', label: 'Other' },
             ]}
           />
-          <Button size="sm" onClick={handleCreateCustom} leftIcon={<Plus className="h-4 w-4" />}>
+          <Button
+            size="sm"
+            onClick={handleCreateCustom}
+            leftIcon={<Plus className="h-4 w-4" />}
+            className="w-full sm:w-auto"
+          >
             New Custom Template
           </Button>
         </div>

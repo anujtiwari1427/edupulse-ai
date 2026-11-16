@@ -64,27 +64,24 @@ function buildSampleTextForAI(pages: ExtractedPage[], outline: OutlineItem[] = [
 
   // 2. Identify and highlight Table of Contents / Index page
   const sortedPages = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
-  const frontPages = sortedPages.filter((p) => p.pageNumber <= 15);
+  const frontPages = sortedPages.filter((p) => p.pageNumber <= 25);
   const tocHeaders = /(?:(?:table\s+of\s+)?contents|index|अनुक्रमणिका|विषय[\s\-]*सूची)/i;
 
   let tocFound = false;
   for (const page of frontPages) {
-    if (tocHeaders.test(page.text.slice(0, 400))) {
+    if (tocHeaders.test(page.text.slice(0, 2000))) {
       sampleParts.push(
-        `--- TABLE OF CONTENTS / INDEX (PDF Physical Page ${page.pageNumber}) ---\n${page.text.trim().slice(0, 3000)}`
+        `--- TABLE OF CONTENTS / INDEX (PDF Physical Page ${page.pageNumber}) ---\n${page.text.trim().slice(0, 4000)}`
       );
       tocFound = true;
-      break;
     }
   }
 
-  // If no explicit TOC page found, include first 8 pages
-  if (!tocFound) {
-    for (const page of frontPages.slice(0, 8)) {
-      const trimmed = page.text.trim();
-      if (trimmed.length > 0) {
-        sampleParts.push(`--- PDF PAGE ${page.pageNumber} ---\n${trimmed.slice(0, 1500)}`);
-      }
+  // Also include first 5 pages for book title, edition, and metadata
+  for (const page of frontPages.slice(0, 5)) {
+    const trimmed = page.text.trim();
+    if (trimmed.length > 0 && !sampleParts.some((p) => p.includes(`PDF Physical Page ${page.pageNumber}`))) {
+      sampleParts.push(`--- PDF FRONT PAGE ${page.pageNumber} ---\n${trimmed.slice(0, 1500)}`);
     }
   }
 
@@ -209,7 +206,8 @@ Return the complete JSON object with the "chapters" array.`;
       timeoutMs: 15_000,
     });
 
-    const parsed = extractJsonFromAIResponse<RawAIResponse>(result.content);
+    const rawOutput = result.text || (result as { content?: string }).content || '';
+    const parsed = extractJsonFromAIResponse<RawAIResponse>(rawOutput);
     const chapters = parsed?.chapters;
 
     if (!Array.isArray(chapters) || chapters.length === 0) {
