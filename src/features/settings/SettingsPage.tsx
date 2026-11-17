@@ -60,6 +60,7 @@ import { exportErrorLogJson, getErrorMessage } from '@/src/lib/errors';
 import { formatBytes, formatDateTime, generateId, sha256Hex } from '@/src/lib/utils';
 import {
   DEFAULT_MODELS_BY_PROVIDER,
+  fetchOllamaModels,
   testAIConnection,
 } from '@/src/features/generation/ai-providers';
 import type {
@@ -103,6 +104,42 @@ export function SettingsPage() {
     ok: boolean;
     message: string;
   } | null>(null);
+
+  const [detectedOllamaModels, setDetectedOllamaModels] = React.useState<string[]>([]);
+  const [detectingModels, setDetectingModels] = React.useState(false);
+
+  const handleDetectOllamaModels = async () => {
+    if (!settings) return;
+    setDetectingModels(true);
+    try {
+      const models = await fetchOllamaModels(settings.ollamaEndpoint || 'http://localhost:11434');
+      setDetectedOllamaModels(models);
+      if (models.length > 0) {
+        addToast({
+          title: `Detected ${models.length} local Ollama model(s)`,
+          description: `Found: ${models.join(', ')}`,
+          variant: 'success',
+        });
+        if (!models.includes(settings.aiModel)) {
+          void repository.settingsRepo.update({ aiModel: models[0] });
+        }
+      } else {
+        addToast({
+          title: 'Ollama is reachable but has no downloaded models',
+          description: "Run 'ollama run llama3.2' in terminal to pull a model.",
+          variant: 'warning',
+        });
+      }
+    } catch (err) {
+      addToast({
+        title: 'Could not connect to Ollama',
+        description: getErrorMessage(err),
+        variant: 'danger',
+      });
+    } finally {
+      setDetectingModels(false);
+    }
+  };
 
   const debouncedSaveSettings = React.useMemo(
     () =>
@@ -783,11 +820,50 @@ export function SettingsPage() {
                           ))}
                         </div>
                       )}
+
+                      {settings.aiProvider === 'ollama' && detectedOllamaModels.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                            Installed on your PC:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {detectedOllamaModels.map((m) => (
+                              <button
+                                key={m}
+                                type="button"
+                                onClick={() => void repository.settingsRepo.update({ aiModel: m })}
+                                className={`rounded-md border px-2 py-0.5 font-mono text-[11px] cursor-pointer transition-colors ${
+                                  settings.aiModel === m
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold'
+                                    : 'border-[var(--border-hairline)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
+                              >
+                                {m}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {settings.aiProvider === 'ollama' && (
                       <div>
-                        <Label htmlFor="ai-ollama">Local Ollama Host Endpoint</Label>
+                        <div className="flex items-center justify-between mb-1">
+                          <Label htmlFor="ai-ollama" className="mb-0">Local Ollama Host Endpoint</Label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            loading={detectingModels}
+                            onClick={handleDetectOllamaModels}
+                            leftIcon={<RefreshCw className="h-3 w-3" />}
+                            className="h-6 text-[11px] px-2"
+                            title="Query Ollama /api/tags for installed models"
+                          >
+                            Detect Models
+                          </Button>
+                        </div>
                         <Input
                           id="ai-ollama"
                           defaultValue={settings.ollamaEndpoint || 'http://localhost:11434'}

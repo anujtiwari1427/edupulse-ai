@@ -310,7 +310,10 @@ export async function callAIProvider(
 
   // Local Ollama (100% Offline & Free)
   if (settings.aiProvider === 'ollama') {
-    const rawEndpoint = (settings.ollamaEndpoint || 'http://localhost:11434').trim().replace(/\/+$/, '');
+    let rawEndpoint = (settings.ollamaEndpoint || 'http://localhost:11434').trim().replace(/\/+$/, '');
+    if (!rawEndpoint.startsWith('http://') && !rawEndpoint.startsWith('https://')) {
+      rawEndpoint = `http://${rawEndpoint}`;
+    }
     const isV1 = rawEndpoint.endsWith('/v1') || rawEndpoint.endsWith('/v1/chat/completions');
     const endpoint = isV1
       ? rawEndpoint.endsWith('/chat/completions')
@@ -367,6 +370,7 @@ export async function callAIProvider(
               stream: false,
               options: {
                 temperature,
+                num_ctx: 8192,
               },
             }),
           },
@@ -509,6 +513,33 @@ export async function callAIProvider(
     throw new AppError('Stateless proxy returned an empty response.', { code: 'EMPTY_AI_RESPONSE' });
   }
   return { text, provider: 'proxy', model, latencyMs: Date.now() - startedAt };
+}
+
+export async function fetchOllamaModels(endpointUrl = 'http://localhost:11434'): Promise<string[]> {
+  let base = (endpointUrl || 'http://localhost:11434').trim().replace(/\/+$/, '');
+  if (!base.startsWith('http://') && !base.startsWith('https://')) {
+    base = `http://${base}`;
+  }
+  base = base.replace(/\/v1(?:\/chat\/completions)?$/, '').replace(/\/api\/chat$/, '');
+  try {
+    const res = await fetch(`${base}/api/tags`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = (await res.json()) as { models?: Array<{ name?: string; model?: string }> };
+    if (!data.models || !Array.isArray(data.models)) return [];
+    return data.models.map((m) => m.name || m.model || '').filter(Boolean);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/Failed to fetch|NetworkError|CORS|load failed/i.test(msg)) {
+      throw new AppError(
+        `Cannot reach Ollama at ${base}. Ensure Ollama is running and permits browser access (run 'set OLLAMA_ORIGINS=*' on Windows or 'OLLAMA_ORIGINS=* ollama serve' on Linux/Mac).`,
+        { code: 'OLLAMA_CONNECTION_ERROR', cause: err }
+      );
+    }
+    throw err;
+  }
 }
 
 export async function testAIConnection(
